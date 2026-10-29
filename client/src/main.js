@@ -12,9 +12,17 @@ import { MiniMap } from './minimap.js';
 import {
   CAMERA_FIELD_OF_VIEW_DEGREES,
   CAMERA_ZOOM,
+  CATCH_SCREEN_SHAKE_MS,
+  DISGUISE_TINT_STRENGTH,
+  HIDER_DISGUISE_SPEED_FACTOR,
   PLAYER_HEIGHT_UNITS,
+  REMOTE_INTERPOLATION_FACTOR,
+  SERVER_POSITION_SNAP_THRESHOLD,
 } from '../../shared/constants.js';
 import './style.css';
+import { MultiplayerClient } from './multiplayer.js';
+import { loadModel } from './modelLoader.js';
+import { WORLD_COLLIDERS } from '../../shared/world.js';
 
 const canvas = document.querySelector('#scene');
 const loading = document.querySelector('#loading');
@@ -24,6 +32,8 @@ const fpsReadout = document.querySelector('#fps');
 const drawCallsReadout = document.querySelector('#draw-calls');
 const qualityLabel = document.querySelector('#quality-label');
 const worldScaleReadout = document.querySelector('#world-scale');
+document.querySelector('#lobby-video').addEventListener('error', () => document.body.classList.add('lobby-video-failed'));
+if (import.meta.env.PROD) document.querySelector('.debug-panel').hidden = true;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -51,6 +61,10 @@ scene.add(player);
 
 let controls;
 let audioContext;
+let multiplayer;
+const playerViews = new Map();
+const disguiseModels = { stump: 'stump_squareDetailed.glb', boulder: 'rock_smallTopB.glb', bush: 'plant_bushDetailed.glb' };
+const disguiseTints = { stump: '#648177', boulder: '#718b89', bush: '#64836f' };
 let quality = 'high';
 let environment;
 let frameCount = 0;
@@ -64,6 +78,71 @@ function showToast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2200);
 }
+
+async function setPlayerView(snapshot, local = false) {
+  if (!snapshot?.id) return;
+  let view = playerViews.get(snapshot.id);
+  if (!view) {
+    const group = new THREE.Group(); group.name = `player-${snapshot.id}`;
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: snapshot.role === 'hunter' ? '#b6ead6' : '#91cdbb', roughness: 0.9, flatShading: true });
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.42, 3, 6), bodyMaterial); body.position.y = 0.31; group.add(body);
+    const hood = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), bodyMaterial); hood.position.y = 0.65; group.add(hood);
+    scene.add(group); view = { group, target: new THREE.Vector3(snapshot.x, 0, snapshot.z), modelType: null, loading: false };
+    playerViews.set(snapshot.id, view);
+  }
+  view.target.set(snapshot.x, 0, snapshot.z);
+  view.group.rotation.y = snapshot.locked ? (snapshot.disguiseRotation || 0) : Math.atan2(-snapshot.aim?.x || 0, -snapshot.aim?.z || 1);
+  const desiredModel = snapshot.locked && snapshot.disguise ? snapshot.disguise : null;
+  view.group.visible = !snapshot.caught;
+  if (desiredModel && desiredModel !== view.modelType && !view.loading) {
+    view.loading = true;
+    try {
+      const gltf = await loadModel(disguiseModels[desiredModel]);
+      const clone = gltf.scene.clone(true);
+      clone.traverse((object) => {
+        if (!object.isMesh) return;
+        const tint = new THREE.Color(disguiseTints[desiredModel]);
+        const grade = (material) => { const copy = material.clone(); if (copy.color) copy.color.lerp(tint, DISGUISE_TINT_STRENGTH); return copy; };
+        object.material = Array.isArray(object.material) ? object.material.map(grade) : grade(object.material);
+        object.castShadow = false; object.receiveShadow = false;
+      });
+      for (const child of [...view.group.children]) if (child.userData.disguiseVisual) view.group.remove(child);
+      clone.userData.disguiseVisual = true; clone.scale.setScalar(snapshot.disguiseScale || 1); view.group.add(clone); view.modelType = desiredModel;
+    } catch (error) { console.warn('Could not load disguise model', error); }
+    finally { view.loading = false; }
+  } else if (!desiredModel && view.modelType) {
+    for (const child of [...view.group.children]) if (child.userData.disguiseVisual) view.group.remove(child);
+    view.modelType = null;
+  }
+  if (local && controls) {
+    const error = Math.hypot(snapshot.x - controls.position.x, snapshot.z - controls.position.z);
+    if (error > SERVER_POSITION_SNAP_THRESHOLD) { controls.position.x = snapshot.x; controls.position.z = snapshot.z; }
+    player.visible = !(snapshot.locked && snapshot.disguise);
+    view.group.visible = Boolean(snapshot.locked && snapshot.disguise) && !snapshot.caught;
+    view.group.position.set(snapshot.x, terrainHeightAt(snapshot.x, snapshot.z, map), snapshot.z);
+  }
+}
+
+function applyRoomState(room, me) {
+  if (controls && me) {
+    controls.speedFactor = room.phase === 'hide' && me.role === 'hunter' ? 0 : me.role === 'hider' && me.disguise ? HIDER_DISGUISE_SPEED_FACTOR : 1;
+    for (const other of room.players) setPlayerView(other, other.id === me.id);
+  }
+  if (import.meta.env.DEV) window.__multiplayerState = room;
+}
+
+function handleGameEvent(type, event) {
+  if (type === 'strike') {
+    if (event.hit) { document.querySelector('#game-shell').classList.add('game-shake'); setTimeout(() => document.querySelector('#game-shell').classList.remove('game-shake'), CATCH_SCREEN_SHAKE_MS); showToast('Hider caught'); }
+    else showToast('Wasted strike');
+  }
+}
+
+multiplayer = new MultiplayerClient({
+  onState: applyRoomState,
+  onEvent: handleGameEvent,
+  unlockAudio: () => unlockAudio(),
+});
 
 function resize() {
   const width = canvas.clientWidth;
@@ -137,12 +216,13 @@ async function prepareScene() {
       camera,
       map,
       waterEffects,
-      colliders: environment.colliders,
+      colliders: WORLD_COLLIDERS,
       onZoneChange: (name) => {
         zoneLabel.textContent = name.toUpperCase();
         showToast(`Entered ${name}`);
       },
     });
+    controls.onInput = (input) => multiplayer.setInput(input);
     controls.update(0);
     miniMap.draw({ x: map.spawn.x, y: map.spawn.y });
     if (import.meta.env.DEV) {
@@ -182,14 +262,30 @@ window.addEventListener('keydown', (event) => {
 
 document.querySelectorAll('[data-quality]').forEach((button) => button.addEventListener('click', () => setQuality(button.dataset.quality)));
 document.querySelector('#audio-unlock').addEventListener('click', async (event) => {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (AudioContextClass) {
-    audioContext ||= new AudioContextClass();
-    await audioContext.resume();
-  }
+  await unlockAudio();
   event.currentTarget.textContent = 'AUDIO READY';
   event.currentTarget.classList.add('unlocked');
 });
+
+async function unlockAudio() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  audioContext ||= new AudioContextClass();
+  if (audioContext.state !== 'running') await audioContext.resume();
+}
+
+const aimRaycaster = new THREE.Raycaster();
+const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const aimPointer = new THREE.Vector2();
+canvas.addEventListener('pointermove', (event) => {
+  if (!controls) return;
+  aimPointer.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+  aimRaycaster.setFromCamera(aimPointer, camera);
+  const point = aimRaycaster.ray.intersectPlane(aimPlane, new THREE.Vector3());
+  if (point) { const dx = point.x - player.position.x; const dz = point.z - player.position.z; const length = Math.hypot(dx, dz) || 1; multiplayer.setAim({ x: dx / length, z: dz / length }); }
+});
+canvas.addEventListener('pointerdown', (event) => { if (event.button === 0 && multiplayer.room?.phase === 'hunt') multiplayer.strike(); });
+window.addEventListener('keydown', (event) => { if (event.code === 'Space' && multiplayer.room?.phase === 'hunt') { event.preventDefault(); multiplayer.strike(); } });
 setQuality('high');
 
 function animate(now) {
@@ -201,6 +297,10 @@ function animate(now) {
     playerShadow.position.y = player.position.y + 0.025;
     playerShadow.position.z = player.position.z;
     miniMap.draw({ x: player.position.x, y: player.position.z });
+  }
+  for (const view of playerViews.values()) {
+    view.group.position.lerp(view.target, REMOTE_INTERPOLATION_FACTOR);
+    view.group.position.y = terrainHeightAt(view.group.position.x, view.group.position.z, map);
   }
   environment?.update(player.position, now / 1000);
   river.update(now / 1000);

@@ -1,0 +1,1748 @@
+[
+  {
+    "id": "decoy-0",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 18.442657151517366,
+    "z": 53.56259257665772,
+    "scale": 2.4107838998315856,
+    "rotation": 5.515394594643141
+  },
+  {
+    "id": "decoy-1",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 16.793676906986786,
+    "z": 51.39118292090501,
+    "scale": 2.638254138058983,
+    "rotation": 4.237211967149058
+  },
+  {
+    "id": "decoy-2",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 18.52158838487327,
+    "z": 56.13471495084222,
+    "scale": 2.4176879514707252,
+    "rotation": 5.095107792102252
+  },
+  {
+    "id": "decoy-3",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 31.841207150788904,
+    "z": 49.72394272786807,
+    "scale": 2.443279299302958,
+    "rotation": 4.319140025815839
+  },
+  {
+    "id": "decoy-4",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 15.917975841876038,
+    "z": 49.299491286500995,
+    "scale": 2.3599381594685838,
+    "rotation": 5.4402762791952135
+  },
+  {
+    "id": "decoy-5",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 31.62523864518662,
+    "z": 54.66238917940255,
+    "scale": 2.3338776867603883,
+    "rotation": 1.5656293089164335
+  },
+  {
+    "id": "decoy-6",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 10.931514936134983,
+    "z": 39.17308493644751,
+    "scale": 2.2514267009682953,
+    "rotation": 4.994670357005648
+  },
+  {
+    "id": "decoy-7",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 12.81622841469761,
+    "z": 27.087692149446696,
+    "scale": 2.577419583802112,
+    "rotation": 2.5228521600160985
+  },
+  {
+    "id": "decoy-8",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 9.754021900541995,
+    "z": 28.251308684443874,
+    "scale": 2.716114623122849,
+    "rotation": 0.7676487421885247
+  },
+  {
+    "id": "decoy-9",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 10.450714414209418,
+    "z": 25.87305388864285,
+    "scale": 2.5817808789433916,
+    "rotation": 2.3317809797402123
+  },
+  {
+    "id": "decoy-10",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 6.590106540229659,
+    "z": 30.363373609020954,
+    "scale": 2.716120740980841,
+    "rotation": 3.071410996162059
+  },
+  {
+    "id": "decoy-11",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 23.196322776428058,
+    "z": 64.69462660334179,
+    "scale": 2.4490926440339535,
+    "rotation": 3.7868079633172766
+  },
+  {
+    "id": "decoy-12",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 22.208074862959634,
+    "z": 61.75745559001627,
+    "scale": 2.6295316864270717,
+    "rotation": 1.236329906148817
+  },
+  {
+    "id": "decoy-13",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 22.724161982325835,
+    "z": 66.9990395425435,
+    "scale": 2.4609216151293367,
+    "rotation": 5.2710539486687615
+  },
+  {
+    "id": "decoy-14",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 19.64711350763575,
+    "z": 66.41701302518753,
+    "scale": 2.728306742617861,
+    "rotation": 1.8697500394855735
+  },
+  {
+    "id": "decoy-15",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 17.147241142193497,
+    "z": 63.526847214726835,
+    "scale": 2.5158638516440988,
+    "rotation": 1.8308181584336016
+  },
+  {
+    "id": "decoy-16",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 15.06739774527004,
+    "z": 59.48883804287168,
+    "scale": 2.5468725380487744,
+    "rotation": 4.768053251756452
+  },
+  {
+    "id": "decoy-17",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 37.48793260869048,
+    "z": 52.17646996346015,
+    "scale": 2.2524029796477407,
+    "rotation": 5.500704326780234
+  },
+  {
+    "id": "decoy-18",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 39.48301316848807,
+    "z": 50.62545819530788,
+    "scale": 2.594891211250797,
+    "rotation": 2.0287301923442143
+  },
+  {
+    "id": "decoy-19",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 42.00706387776366,
+    "z": 50.9958540505148,
+    "scale": 2.3496182567905635,
+    "rotation": 2.474548326893276
+  },
+  {
+    "id": "decoy-20",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 75.69176848295564,
+    "z": 15.187790406709954,
+    "scale": 2.2846393333747983,
+    "rotation": 1.9404948355245772
+  },
+  {
+    "id": "decoy-21",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 75.28171079137093,
+    "z": 22.007497189774803,
+    "scale": 2.666978384833783,
+    "rotation": 0.8048689871439828
+  },
+  {
+    "id": "decoy-22",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 73.44157244570413,
+    "z": 18.893081705574232,
+    "scale": 2.393596762791276,
+    "rotation": 0.2465413224185295
+  },
+  {
+    "id": "decoy-23",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 72.75490572805089,
+    "z": 22.79133586986897,
+    "scale": 2.450879455078393,
+    "rotation": 6.195199964522614
+  },
+  {
+    "id": "decoy-24",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 71.49173765173283,
+    "z": 20.855506327408712,
+    "scale": 2.6413525780662894,
+    "rotation": 3.368287175000826
+  },
+  {
+    "id": "decoy-25",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 73.84234993985955,
+    "z": 13.621238476707182,
+    "scale": 2.5547832301817834,
+    "rotation": 5.331311880824934
+  },
+  {
+    "id": "decoy-26",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 57.888213483223645,
+    "z": 10.180290487630277,
+    "scale": 2.5194179277168587,
+    "rotation": 6.20988429293812
+  },
+  {
+    "id": "decoy-27",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 54.95451309740646,
+    "z": 8.016024044502661,
+    "scale": 2.726922655128874,
+    "rotation": 3.776978199811028
+  },
+  {
+    "id": "decoy-28",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 60.239869091711824,
+    "z": 10.73908074992063,
+    "scale": 2.61767740000505,
+    "rotation": 4.301184564298795
+  },
+  {
+    "id": "decoy-29",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 58.08000653925418,
+    "z": 7.799398804459945,
+    "scale": 2.628205719054677,
+    "rotation": 6.189483812547654
+  },
+  {
+    "id": "decoy-30",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 65.60648070615234,
+    "z": 4.889327199767216,
+    "scale": 2.287749274400994,
+    "rotation": 2.8777780546871075
+  },
+  {
+    "id": "decoy-31",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 65.82558041498696,
+    "z": 1.862248389907252,
+    "scale": 2.282992334337905,
+    "rotation": 2.3040162531250465
+  },
+  {
+    "id": "decoy-32",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 67.8752462881446,
+    "z": 2.727938339901584,
+    "scale": 2.5386900266166776,
+    "rotation": 4.832876746429486
+  },
+  {
+    "id": "decoy-33",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 78.73470790746094,
+    "z": 57.08514303219409,
+    "scale": 2.3833809721982107,
+    "rotation": 1.015139227800654
+  },
+  {
+    "id": "decoy-34",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 82.19419096291496,
+    "z": 57.95071590157969,
+    "scale": 2.3717525199754164,
+    "rotation": 2.907180409836075
+  },
+  {
+    "id": "decoy-35",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 78.00912889039643,
+    "z": 59.20284557782195,
+    "scale": 2.5816591618349776,
+    "rotation": 1.0604427461426085
+  },
+  {
+    "id": "decoy-36",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 82.5495895414866,
+    "z": 60.665931057373086,
+    "scale": 2.633497631060891,
+    "rotation": 0.15551657434669328
+  },
+  {
+    "id": "decoy-37",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 62.38883439813728,
+    "z": 14.417570938974968,
+    "scale": 2.468223198899068,
+    "rotation": 1.1081208760366654
+  },
+  {
+    "id": "decoy-38",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 63.50389012479334,
+    "z": 16.390935969341143,
+    "scale": 2.3137819768162444,
+    "rotation": 3.9331991779903968
+  },
+  {
+    "id": "decoy-39",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 65.30631419839074,
+    "z": 18.662509949530737,
+    "scale": 2.552427374408581,
+    "rotation": 0.5456497650286145
+  },
+  {
+    "id": "decoy-40",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 120.6792689413869,
+    "z": 9.793569170550551,
+    "scale": 2.6584947669180115,
+    "rotation": 4.6487803835856
+  },
+  {
+    "id": "decoy-41",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 120.38080237360965,
+    "z": 7.338856628779906,
+    "scale": 2.695702631608583,
+    "rotation": 3.6557113143184936
+  },
+  {
+    "id": "decoy-42",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 118.39216978570964,
+    "z": 9.196829327271095,
+    "scale": 2.3695055741118267,
+    "rotation": 1.681160159914393
+  },
+  {
+    "id": "decoy-43",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 121.30074033238665,
+    "z": 4.978356028778627,
+    "scale": 2.4584796108538285,
+    "rotation": 1.7880745960498026
+  },
+  {
+    "id": "decoy-44",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 116.50191684182592,
+    "z": 10.398031431639968,
+    "scale": 2.422766996663995,
+    "rotation": 1.2962980708064389
+  },
+  {
+    "id": "decoy-45",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 135.17214416664612,
+    "z": 53.44725431325981,
+    "scale": 2.5010741378646344,
+    "rotation": 3.736775135112012
+  },
+  {
+    "id": "decoy-46",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 135.70920893358326,
+    "z": 51.14059819648502,
+    "scale": 2.655209650518373,
+    "rotation": 2.6585800799601915
+  },
+  {
+    "id": "decoy-47",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 136.01589100280148,
+    "z": 55.81753076936697,
+    "scale": 2.4839280990418047,
+    "rotation": 3.6076987715919424
+  },
+  {
+    "id": "decoy-48",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 113.3011204676237,
+    "z": 28.730448210234044,
+    "scale": 2.3380572762107477,
+    "rotation": 1.9568186591573538
+  },
+  {
+    "id": "decoy-49",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 102.29787285611768,
+    "z": 23.167327818324345,
+    "scale": 2.7176623278064653,
+    "rotation": 3.194698677691717
+  },
+  {
+    "id": "decoy-50",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 104.04293270860884,
+    "z": 21.34138523427803,
+    "scale": 2.4885650848736987,
+    "rotation": 2.085180346233995
+  },
+  {
+    "id": "decoy-51",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 105.53953452121672,
+    "z": 19.422635761919295,
+    "scale": 2.3612654301105067,
+    "rotation": 2.6149194434908614
+  },
+  {
+    "id": "decoy-52",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 132.96422573168374,
+    "z": 52.446403451600744,
+    "scale": 2.682149339118041,
+    "rotation": 6.242086285617513
+  },
+  {
+    "id": "decoy-53",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 133.71290048929944,
+    "z": 55.737185398306984,
+    "scale": 2.6183725633891304,
+    "rotation": 5.769337338960601
+  },
+  {
+    "id": "decoy-54",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 134.01141266348606,
+    "z": 58.175160353724166,
+    "scale": 2.5399685172596946,
+    "rotation": 5.833631939008765
+  },
+  {
+    "id": "decoy-55",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 133.88853925985774,
+    "z": 60.49768222753873,
+    "scale": 2.3087889162125066,
+    "rotation": 3.0007564241326756
+  },
+  {
+    "id": "decoy-56",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 119.86913363553592,
+    "z": 26.396341584279888,
+    "scale": 2.3219133656239137,
+    "rotation": 2.675997706959983
+  },
+  {
+    "id": "decoy-57",
+    "type": "boulder",
+    "model": "rock_smallTopB.glb",
+    "x": 115.85621277052178,
+    "z": 26.650560596270985,
+    "scale": 2.4292683609528467,
+    "rotation": 3.600881229556809
+  },
+  {
+    "id": "decoy-58",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 44.029347525576505,
+    "z": 39.96713260711322,
+    "scale": 2.39723382113111,
+    "rotation": 0.5862068427365504
+  },
+  {
+    "id": "decoy-59",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 39.72801027384136,
+    "z": 41.21352155825624,
+    "scale": 2.091619727326413,
+    "rotation": 2.6147441332399146
+  },
+  {
+    "id": "decoy-60",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 42.549815944443125,
+    "z": 40.629208678729114,
+    "scale": 2.1192343209543254,
+    "rotation": 0.7985545397104731
+  },
+  {
+    "id": "decoy-61",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 38.46836961430268,
+    "z": 42.15119896674371,
+    "scale": 2.280546724787526,
+    "rotation": 5.839941887969181
+  },
+  {
+    "id": "decoy-62",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 24.78577002419046,
+    "z": 19.69230527958969,
+    "scale": 2.4025129560863467,
+    "rotation": 6.1506277296701235
+  },
+  {
+    "id": "decoy-63",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 22.22497349548863,
+    "z": 26.594713303183294,
+    "scale": 2.0999994220564417,
+    "rotation": 4.492549877420781
+  },
+  {
+    "id": "decoy-64",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 23.14206264379492,
+    "z": 17.18763995466614,
+    "scale": 2.227203300129885,
+    "rotation": 0.5777092446174802
+  },
+  {
+    "id": "decoy-65",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 24.238700795815348,
+    "z": 27.373134897710635,
+    "scale": 2.2659389778065493,
+    "rotation": 5.159084952093479
+  },
+  {
+    "id": "decoy-66",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 27.22629958946968,
+    "z": 30.977029616051762,
+    "scale": 2.164242213458731,
+    "rotation": 1.5795436991580667
+  },
+  {
+    "id": "decoy-67",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 37.75803833923375,
+    "z": 22.068388826730143,
+    "scale": 2.314319260844408,
+    "rotation": 3.6203012944347472
+  },
+  {
+    "id": "decoy-68",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 39.916850042531756,
+    "z": 23.106818825920897,
+    "scale": 2.186184770628701,
+    "rotation": 5.716019013261178
+  },
+  {
+    "id": "decoy-69",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 41.259417807277075,
+    "z": 24.071319667685426,
+    "scale": 2.3545541541241013,
+    "rotation": 3.4473654121953894
+  },
+  {
+    "id": "decoy-70",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 14.322786520275656,
+    "z": 6.872183285036773,
+    "scale": 2.2378152167284573,
+    "rotation": 0.0569632285185414
+  },
+  {
+    "id": "decoy-71",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 16.04031762011104,
+    "z": 6.719003113291195,
+    "scale": 2.320952087618871,
+    "rotation": 0.4401973999429042
+  },
+  {
+    "id": "decoy-72",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 15.261607099550627,
+    "z": 10.502938640287052,
+    "scale": 2.417118423205047,
+    "rotation": 3.386766741548948
+  },
+  {
+    "id": "decoy-73",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 12.957733875759725,
+    "z": 6.161304679031329,
+    "scale": 2.2901324568425023,
+    "rotation": 1.3352739842296786
+  },
+  {
+    "id": "decoy-74",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 22.764914638625523,
+    "z": 28.390558988202415,
+    "scale": 2.194701585580724,
+    "rotation": 2.1040469350745776
+  },
+  {
+    "id": "decoy-75",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 22.612119064357863,
+    "z": 30.220606130038053,
+    "scale": 2.1169759982442176,
+    "rotation": 4.051846993931029
+  },
+  {
+    "id": "decoy-76",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 28.30041441710629,
+    "z": 47.40211017940717,
+    "scale": 2.339810918184967,
+    "rotation": 2.704164712640258
+  },
+  {
+    "id": "decoy-77",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 31.547376097206204,
+    "z": 47.18568464648947,
+    "scale": 2.2343203611968803,
+    "rotation": 1.2636456237066676
+  },
+  {
+    "id": "decoy-78",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 90.35875849020844,
+    "z": 14.740116546523419,
+    "scale": 2.2852331629430456,
+    "rotation": 3.294492390797573
+  },
+  {
+    "id": "decoy-79",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 87.61118899669694,
+    "z": 17.622917287523954,
+    "scale": 2.1171232796005897,
+    "rotation": 5.465586460414425
+  },
+  {
+    "id": "decoy-80",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 88.39034272594857,
+    "z": 19.166874452066764,
+    "scale": 2.097844347018702,
+    "rotation": 2.2331733772063367
+  },
+  {
+    "id": "decoy-81",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 86.24633796058431,
+    "z": 18.262039008841942,
+    "scale": 2.287294716184145,
+    "rotation": 1.4328165194963705
+  },
+  {
+    "id": "decoy-82",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 52.754798254133384,
+    "z": 55.69067476840384,
+    "scale": 2.010692527647936,
+    "rotation": 2.6434233518902013
+  },
+  {
+    "id": "decoy-83",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 60.664964416311975,
+    "z": 53.270357239812796,
+    "scale": 2.0155860136196906,
+    "rotation": 2.088051507292235
+  },
+  {
+    "id": "decoy-84",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 52.78291341359361,
+    "z": 62.85923333828886,
+    "scale": 2.2109163002628205,
+    "rotation": 4.387785393970959
+  },
+  {
+    "id": "decoy-85",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 71.18505747378111,
+    "z": 31.23143988116975,
+    "scale": 2.39751227534603,
+    "rotation": 0.9122994032634583
+  },
+  {
+    "id": "decoy-86",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 72.91502922083856,
+    "z": 31.189048443682523,
+    "scale": 2.411324067386463,
+    "rotation": 5.374160695775783
+  },
+  {
+    "id": "decoy-87",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 71.51572355252371,
+    "z": 29.71318894935768,
+    "scale": 2.1997597961240696,
+    "rotation": 5.491852156817537
+  },
+  {
+    "id": "decoy-88",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 71.64258486933437,
+    "z": 32.69294628818019,
+    "scale": 2.123956294448809,
+    "rotation": 6.032939636265787
+  },
+  {
+    "id": "decoy-89",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 74.43471271246692,
+    "z": 30.94040513179519,
+    "scale": 2.263899220573896,
+    "rotation": 5.2814514048502605
+  },
+  {
+    "id": "decoy-90",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 70.01722189358517,
+    "z": 28.822713022206838,
+    "scale": 2.197023218423828,
+    "rotation": 1.2294081092567646
+  },
+  {
+    "id": "decoy-91",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 64.34641071724029,
+    "z": 14.841162474250162,
+    "scale": 2.1164856854214795,
+    "rotation": 1.4978417812938152
+  },
+  {
+    "id": "decoy-92",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 61.49584109914963,
+    "z": 12.716928369559422,
+    "scale": 2.1765451530153483,
+    "rotation": 3.676471845180792
+  },
+  {
+    "id": "decoy-93",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 62.786743641246005,
+    "z": 11.921205726300677,
+    "scale": 2.090883270930649,
+    "rotation": 0.6604015243742797
+  },
+  {
+    "id": "decoy-94",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 65.40349543431007,
+    "z": 16.113756507770198,
+    "scale": 2.2936537215453887,
+    "rotation": 0.25446065242755467
+  },
+  {
+    "id": "decoy-95",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 55.03714732340404,
+    "z": 29.430486827683605,
+    "scale": 2.367731192071374,
+    "rotation": 1.7346893681807787
+  },
+  {
+    "id": "decoy-96",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 55.644315902778224,
+    "z": 38.19341627663935,
+    "scale": 2.386310964683349,
+    "rotation": 2.0157275701842385
+  },
+  {
+    "id": "decoy-97",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 54.61572273422627,
+    "z": 27.908764982882545,
+    "scale": 2.233368093308814,
+    "rotation": 4.488213590739892
+  },
+  {
+    "id": "decoy-98",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 99.7573631281199,
+    "z": 59.73441252705777,
+    "scale": 2.17323250475498,
+    "rotation": 6.002777938858595
+  },
+  {
+    "id": "decoy-99",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 93.62094901018759,
+    "z": 59.80988340552336,
+    "scale": 2.1426268318747663,
+    "rotation": 2.0332434804093498
+  },
+  {
+    "id": "decoy-100",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 100.31178208873335,
+    "z": 52.61866427558752,
+    "scale": 2.0764543730830787,
+    "rotation": 3.6677922147022004
+  },
+  {
+    "id": "decoy-101",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 100.76791096553511,
+    "z": 67.36673418743625,
+    "scale": 2.2940427075807635,
+    "rotation": 3.3088764582031454
+  },
+  {
+    "id": "decoy-102",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 129.76250794137647,
+    "z": 30.648210296596165,
+    "scale": 2.0628098023306207,
+    "rotation": 5.419404281289865
+  },
+  {
+    "id": "decoy-103",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 131.07708166391055,
+    "z": 29.797293273837262,
+    "scale": 2.375110308304035,
+    "rotation": 5.966738444343275
+  },
+  {
+    "id": "decoy-104",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 129.76856461374567,
+    "z": 28.75320451796561,
+    "scale": 2.1946293003957553,
+    "rotation": 1.914676236144851
+  },
+  {
+    "id": "decoy-105",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 116.37427738314736,
+    "z": 24.557986016514878,
+    "scale": 2.018619132180396,
+    "rotation": 5.514741425127437
+  },
+  {
+    "id": "decoy-106",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 117.74663755899047,
+    "z": 23.530317914282495,
+    "scale": 2.214468218193101,
+    "rotation": 2.8855923852139114
+  },
+  {
+    "id": "decoy-107",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 119.18203458623125,
+    "z": 23.42677178340236,
+    "scale": 2.0852003314037315,
+    "rotation": 1.0802177120207406
+  },
+  {
+    "id": "decoy-108",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 117.85023919531007,
+    "z": 25.229251022275815,
+    "scale": 2.0617278182689174,
+    "rotation": 0.06667495209081013
+  },
+  {
+    "id": "decoy-109",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 133.1640429177751,
+    "z": 2.3321210561520815,
+    "scale": 2.0150109333737714,
+    "rotation": 0.5912205745957498
+  },
+  {
+    "id": "decoy-110",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 135.18400951309144,
+    "z": 3.5399282846490023,
+    "scale": 2.132537652439357,
+    "rotation": 2.429134653745789
+  },
+  {
+    "id": "decoy-111",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 135.85766759357918,
+    "z": 4.972525915424833,
+    "scale": 2.4390938572355965,
+    "rotation": 2.938720334069089
+  },
+  {
+    "id": "decoy-112",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 135.8480011707615,
+    "z": 1.9595523521914586,
+    "scale": 2.0321382184118257,
+    "rotation": 0.6295609832390933
+  },
+  {
+    "id": "decoy-113",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 133.91850180753937,
+    "z": 15.617520111183717,
+    "scale": 2.2392161153509713,
+    "rotation": 3.877829503209765
+  },
+  {
+    "id": "decoy-114",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 134.94092638978566,
+    "z": 16.620744552850876,
+    "scale": 2.018996963046143,
+    "rotation": 3.380373415035522
+  },
+  {
+    "id": "decoy-115",
+    "type": "bush",
+    "model": "plant_bushDetailed.glb",
+    "x": 136.00895923433006,
+    "z": 18.027167616223046,
+    "scale": 2.0968230954409286,
+    "rotation": 1.3653318012869797
+  },
+  {
+    "id": "decoy-116",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 35.499743899191444,
+    "z": 51.93856446300554,
+    "scale": 2.7286508475313895,
+    "rotation": 2.9339570391558794
+  },
+  {
+    "id": "decoy-117",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 34.074774535084,
+    "z": 52.64641908901236,
+    "scale": 2.58197586335009,
+    "rotation": 6.040770799128011
+  },
+  {
+    "id": "decoy-118",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 37.19785512065527,
+    "z": 54.04153852626503,
+    "scale": 3.016222376364749,
+    "rotation": 3.4940898453127187
+  },
+  {
+    "id": "decoy-119",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 36.02598980291626,
+    "z": 50.58204308058639,
+    "scale": 2.765312522405293,
+    "rotation": 4.354750702469174
+  },
+  {
+    "id": "decoy-120",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 35.180273081459475,
+    "z": 55.56640742824368,
+    "scale": 3.0197241852874868,
+    "rotation": 2.9057223223123056
+  },
+  {
+    "id": "decoy-121",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 34.662442871917136,
+    "z": 50.12597625470382,
+    "scale": 2.6387315973988734,
+    "rotation": 0.19418178298783167
+  },
+  {
+    "id": "decoy-122",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 17.768143317002327,
+    "z": 5.544168415857232,
+    "scale": 2.722150944522582,
+    "rotation": 0.637101691031269
+  },
+  {
+    "id": "decoy-123",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 15.310634788613072,
+    "z": 2.964235718602366,
+    "scale": 2.7255314759211617,
+    "rotation": 6.109484437281136
+  },
+  {
+    "id": "decoy-124",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 18.07708750019947,
+    "z": 2.302263160889324,
+    "scale": 2.7532262789784,
+    "rotation": 4.876367621496144
+  },
+  {
+    "id": "decoy-125",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 16.81754191647586,
+    "z": 2.904105500435961,
+    "scale": 2.8657573258737106,
+    "rotation": 4.771648814737511
+  },
+  {
+    "id": "decoy-126",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 44.60742244994736,
+    "z": 22.653990971680933,
+    "scale": 2.4782252331380734,
+    "rotation": 0.6971655217537663
+  },
+  {
+    "id": "decoy-127",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 43.14632034853287,
+    "z": 21.662184547019532,
+    "scale": 2.968794113269542,
+    "rotation": 1.4420180854985285
+  },
+  {
+    "id": "decoy-128",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 43.9485815889994,
+    "z": 19.990237012546782,
+    "scale": 2.7936947405454706,
+    "rotation": 5.63023479323837
+  },
+  {
+    "id": "decoy-129",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 42.980159051882694,
+    "z": 23.732367082798877,
+    "scale": 2.887481822969858,
+    "rotation": 6.125720541420043
+  },
+  {
+    "id": "decoy-130",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 42.64175702637063,
+    "z": 25.693048970811596,
+    "scale": 2.5463942955364476,
+    "rotation": 3.6512753926759802
+  },
+  {
+    "id": "decoy-131",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 40.729977971560636,
+    "z": 20.383723218881983,
+    "scale": 2.506831272377167,
+    "rotation": 4.323870944889037
+  },
+  {
+    "id": "decoy-132",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 21.897926090428456,
+    "z": 58.92596826247245,
+    "scale": 2.9844298542477192,
+    "rotation": 2.3759473352862006
+  },
+  {
+    "id": "decoy-133",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 19.691105836203917,
+    "z": 58.07496907372442,
+    "scale": 2.803864353196696,
+    "rotation": 1.9117118462432559
+  },
+  {
+    "id": "decoy-134",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 17.102743306262234,
+    "z": 54.80091289840574,
+    "scale": 3.0089628316462047,
+    "rotation": 1.2815788254622171
+  },
+  {
+    "id": "decoy-135",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 19.38733166190047,
+    "z": 59.42323704590008,
+    "scale": 2.619756253017113,
+    "rotation": 5.505106419905082
+  },
+  {
+    "id": "decoy-136",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 15.934391066178414,
+    "z": 53.63862234274432,
+    "scale": 2.847255919780583,
+    "rotation": 5.880035102149625
+  },
+  {
+    "id": "decoy-137",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 15.662681441735728,
+    "z": 55.87691524657988,
+    "scale": 2.745452374825254,
+    "rotation": 4.787140505697193
+  },
+  {
+    "id": "decoy-138",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 41.53590528228433,
+    "z": 66.83833821961208,
+    "scale": 2.5103535513160753,
+    "rotation": 3.4253844258333634
+  },
+  {
+    "id": "decoy-139",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 39.558448392787675,
+    "z": 66.57147352980581,
+    "scale": 2.858399322465994,
+    "rotation": 2.708225287539501
+  },
+  {
+    "id": "decoy-140",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 44.261744424933255,
+    "z": 67.25129615863766,
+    "scale": 2.680605418398045,
+    "rotation": 2.157947323693543
+  },
+  {
+    "id": "decoy-141",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 44.30776394011236,
+    "z": 65.70493267815507,
+    "scale": 2.484960470837541,
+    "rotation": 4.370335146823836
+  },
+  {
+    "id": "decoy-142",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 37.74021933773666,
+    "z": 65.82121075268803,
+    "scale": 2.9947605379624296,
+    "rotation": 1.5912372144456293
+  },
+  {
+    "id": "decoy-143",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 82.74914200823656,
+    "z": 30.367457470498454,
+    "scale": 2.5898918244289235,
+    "rotation": 5.642242587216902
+  },
+  {
+    "id": "decoy-144",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 86.46300407506637,
+    "z": 37.88157993125496,
+    "scale": 2.61357253480237,
+    "rotation": 2.6084278191229355
+  },
+  {
+    "id": "decoy-145",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 88.38271631988239,
+    "z": 38.14340268067511,
+    "scale": 2.989722068817355,
+    "rotation": 4.928708682808582
+  },
+  {
+    "id": "decoy-146",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 90.20857718610819,
+    "z": 27.977567269402623,
+    "scale": 2.7736726937582716,
+    "rotation": 6.230810641175949
+  },
+  {
+    "id": "decoy-147",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 89.87833100010563,
+    "z": 38.02838076335587,
+    "scale": 2.7792800457449633,
+    "rotation": 0.8337332181179183
+  },
+  {
+    "id": "decoy-148",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 88.22607573206173,
+    "z": 23.56305416460526,
+    "scale": 2.8817276951624082,
+    "rotation": 3.9598643548963324
+  },
+  {
+    "id": "decoy-149",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 55.28262125424432,
+    "z": 43.102103452775545,
+    "scale": 2.7019727756851353,
+    "rotation": 4.4471778403847475
+  },
+  {
+    "id": "decoy-150",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 56.86972063717124,
+    "z": 42.69483863021251,
+    "scale": 2.64664717084961,
+    "rotation": 4.9910863174303
+  },
+  {
+    "id": "decoy-151",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 55.296780494887386,
+    "z": 41.427990233214295,
+    "scale": 2.60610204791883,
+    "rotation": 4.1828818287892915
+  },
+  {
+    "id": "decoy-152",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 48.99961738621252,
+    "z": 22.83210207512564,
+    "scale": 2.8683121156878775,
+    "rotation": 3.7608034036429863
+  },
+  {
+    "id": "decoy-153",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 49.215040393268254,
+    "z": 19.771452278565835,
+    "scale": 2.951129591884092,
+    "rotation": 1.0140861447583753
+  },
+  {
+    "id": "decoy-154",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 47.94073444468778,
+    "z": 24.543660826606857,
+    "scale": 2.6449241388589146,
+    "rotation": 1.223182178607477
+  },
+  {
+    "id": "decoy-155",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 47.608232062361026,
+    "z": 22.899238008747993,
+    "scale": 2.5985276843886824,
+    "rotation": 3.4122774902997457
+  },
+  {
+    "id": "decoy-156",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 87.4468403807486,
+    "z": 63.057311905637185,
+    "scale": 2.6842823884799145,
+    "rotation": 2.2564850777408063
+  },
+  {
+    "id": "decoy-157",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 86.27101580929542,
+    "z": 63.68569649437149,
+    "scale": 2.5942909900913946,
+    "rotation": 3.599914050527063
+  },
+  {
+    "id": "decoy-158",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 89.68432308744808,
+    "z": 62.68043957934716,
+    "scale": 2.8735872755176395,
+    "rotation": 2.4517946710893237
+  },
+  {
+    "id": "decoy-159",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 88.68138562326595,
+    "z": 63.759270311869784,
+    "scale": 2.9887923933449203,
+    "rotation": 1.2951340034840766
+  },
+  {
+    "id": "decoy-160",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 84.18010912182167,
+    "z": 62.98503812052908,
+    "scale": 2.8730594364344144,
+    "rotation": 5.863564243546538
+  },
+  {
+    "id": "decoy-161",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 87.4966305993482,
+    "z": 64.98535246624367,
+    "scale": 2.8772300581331365,
+    "rotation": 5.910209076365338
+  },
+  {
+    "id": "decoy-162",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 83.08076049501041,
+    "z": 55.147321499875645,
+    "scale": 2.639450997882523,
+    "rotation": 1.451847530088636
+  },
+  {
+    "id": "decoy-163",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 81.76614995148566,
+    "z": 55.578157520236225,
+    "scale": 2.660212602070533,
+    "rotation": 2.128272955019835
+  },
+  {
+    "id": "decoy-164",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 79.7940484158212,
+    "z": 58.54167663851062,
+    "scale": 2.722129138489254,
+    "rotation": 0.6749421679018759
+  },
+  {
+    "id": "decoy-165",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 79.66059101631939,
+    "z": 60.41727258192155,
+    "scale": 2.5633625405607745,
+    "rotation": 2.7150707084044714
+  },
+  {
+    "id": "decoy-166",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 74.92359771068645,
+    "z": 63.11695555014693,
+    "scale": 2.595473182667047,
+    "rotation": 2.3329609972583927
+  },
+  {
+    "id": "decoy-167",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 76.79140157051988,
+    "z": 63.348731273110005,
+    "scale": 2.8237923559267077,
+    "rotation": 3.725201039290178
+  },
+  {
+    "id": "decoy-168",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 75.53412429422319,
+    "z": 60.56731512844003,
+    "scale": 2.8091592710465196,
+    "rotation": 5.603185778812633
+  },
+  {
+    "id": "decoy-169",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 74.72357962106219,
+    "z": 61.6902761154544,
+    "scale": 2.657287569670007,
+    "rotation": 6.245970033219762
+  },
+  {
+    "id": "decoy-170",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 94.59865938556415,
+    "z": 10.725868867430046,
+    "scale": 3.0011328013264578,
+    "rotation": 2.067342828098338
+  },
+  {
+    "id": "decoy-171",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 95.15616656336313,
+    "z": 12.021897424671451,
+    "scale": 2.64516920625465,
+    "rotation": 5.459270146297446
+  },
+  {
+    "id": "decoy-172",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 95.92336935097421,
+    "z": 10.233350532654473,
+    "scale": 2.9632217612699607,
+    "rotation": 0.08014221312485995
+  },
+  {
+    "id": "decoy-173",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 94.33869640387124,
+    "z": 13.07150698281318,
+    "scale": 2.7820328651112503,
+    "rotation": 1.8236852727031374
+  },
+  {
+    "id": "decoy-174",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 95.7559623837368,
+    "z": 13.430481986330403,
+    "scale": 2.5388359062024395,
+    "rotation": 5.0449294211031175
+  },
+  {
+    "id": "decoy-175",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 93.98730240107874,
+    "z": 9.474206306614168,
+    "scale": 2.574723792925943,
+    "rotation": 1.4423616196252467
+  },
+  {
+    "id": "decoy-176",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 136.33145992333286,
+    "z": 16.102983821591184,
+    "scale": 2.6817946068476886,
+    "rotation": 1.97406868255864
+  },
+  {
+    "id": "decoy-177",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 134.97486170135198,
+    "z": 14.554892924672426,
+    "scale": 2.567762865778059,
+    "rotation": 3.872688197579463
+  },
+  {
+    "id": "decoy-178",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 135.07380449123764,
+    "z": 13.175595269924193,
+    "scale": 3.008977816859261,
+    "rotation": 3.489396036082438
+  },
+  {
+    "id": "decoy-179",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 136.1288432983819,
+    "z": 12.1113675790059,
+    "scale": 2.980082583241165,
+    "rotation": 4.760448318934761
+  },
+  {
+    "id": "decoy-180",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 118.10114551111512,
+    "z": 11.272776426733598,
+    "scale": 2.953360628231895,
+    "rotation": 1.1943201873611209
+  },
+  {
+    "id": "decoy-181",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 114.91610391716536,
+    "z": 12.251322367975721,
+    "scale": 2.508357152005192,
+    "rotation": 3.9216081503547136
+  },
+  {
+    "id": "decoy-182",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 118.04972294490781,
+    "z": 7.235334179955855,
+    "scale": 2.7986495340126574,
+    "rotation": 0.8047024207543956
+  },
+  {
+    "id": "decoy-183",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 122.69063012905183,
+    "z": 3.920723126856082,
+    "scale": 2.5234072550549174,
+    "rotation": 2.4682370627695067
+  },
+  {
+    "id": "decoy-184",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 124.04776546659164,
+    "z": 22.160027246869895,
+    "scale": 3.0009654071996925,
+    "rotation": 4.561095045927897
+  },
+  {
+    "id": "decoy-185",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 136.51747203309324,
+    "z": 6.3461317160076325,
+    "scale": 2.942254519672133,
+    "rotation": 3.532231333670234
+  },
+  {
+    "id": "decoy-186",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 125.18429475934714,
+    "z": 1.8057112540132447,
+    "scale": 2.745497284620069,
+    "rotation": 4.2556540200888735
+  },
+  {
+    "id": "decoy-187",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 136.44725023899576,
+    "z": 8.769181857085968,
+    "scale": 2.700643892702647,
+    "rotation": 6.058570089751339
+  },
+  {
+    "id": "decoy-188",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 131.66857315136357,
+    "z": 1.5257818782694867,
+    "scale": 2.9069196623517204,
+    "rotation": 5.20719989762266
+  },
+  {
+    "id": "decoy-189",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 129.1479248885649,
+    "z": 66.93556853630113,
+    "scale": 2.913774303207174,
+    "rotation": 4.87670348700629
+  },
+  {
+    "id": "decoy-190",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 130.54616530175937,
+    "z": 65.12034200699559,
+    "scale": 2.554134695790708,
+    "rotation": 1.2491933535973216
+  },
+  {
+    "id": "decoy-191",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 130.765907657486,
+    "z": 66.67301209027258,
+    "scale": 2.6778270838316534,
+    "rotation": 6.072438901317295
+  },
+  {
+    "id": "decoy-192",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 131.98324290315537,
+    "z": 65.16683570384863,
+    "scale": 2.5672121045179668,
+    "rotation": 4.947838820729899
+  },
+  {
+    "id": "decoy-193",
+    "type": "stump",
+    "model": "stump_squareDetailed.glb",
+    "x": 101.00049831683725,
+    "z": 24.575349725210614,
+    "scale": 2.9287011005682873,
+    "rotation": 2.3334700722691246
+  }
+]

@@ -6,11 +6,34 @@
     <meta name="theme-color" content="#102c2a" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Shadow Hunt — Pine Hollow</title>
-    <script type="module" crossorigin src="/assets/index-B0tccT2L.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Cr7sZfTW.css">
+    <script type="module" crossorigin src="/assets/index-Yu94CkKv.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BnyMJAaC.css">
   </head>
   <body>
-    <main id="game-shell">
+    <video id="lobby-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" src="/media/lobby.mp4"></video>
+    <div id="lobby-fallback" aria-hidden="true"></div>
+    <section id="landing-screen" class="front-screen">
+      <form id="landing-card" class="front-card">
+        <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
+        <button id="create-room" type="button">Create Room</button>
+        <div class="join-row"><input id="room-code-input" maxlength="4" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code" /><button id="join-room" type="button">Join</button></div>
+        <p id="lobby-error" role="alert" aria-live="polite"></p>
+      </form>
+    </section>
+    <section id="lobby-screen" class="front-screen" hidden>
+      <div class="front-card lobby-card">
+        <div id="room-code" class="room-code"></div>
+        <div class="copy-row"><button id="copy-code" type="button">Copy</button><button id="copy-link" type="button">Copy link</button></div>
+        <ul id="player-list" class="player-list"></ul>
+        <div class="lobby-actions"><button id="ready-button" type="button">Ready</button><button id="start-button" type="button" disabled>Start</button></div>
+        <button id="leave-room" class="quiet-button" type="button">Leave</button>
+        <button id="how-to-open" class="quiet-button" type="button">How to play</button>
+      </div>
+    </section>
+    <section id="how-to-screen" class="front-screen" hidden>
+      <div class="front-card"><p>Hiders get 10 seconds to hide. Disguise as a stump, boulder, or bush.</p><p>The hunter has 3 strikes. Choose a weapon, aim, and catch every hider.</p><p>Hiders win when time runs out or the hunter spends all strikes.</p><button id="how-to-close" type="button">Back</button></div>
+    </section>
+    <main id="game-shell" hidden>
       <canvas id="scene" aria-label="Shadow Hunt game view"></canvas>
       <section class="hud hud-top-left" aria-label="Game status">
         <div class="brand">SHADOW HUNT <span>FIELD TEST · 1C</span></div>
@@ -36,6 +59,18 @@
         </div>
         <button id="audio-unlock" class="audio-button">UNLOCK AUDIO</button>
       </section>
+      <section id="game-hud" class="game-hud hud" hidden>
+        <b id="game-role">HIDE!</b><span id="game-timer">00:10</span><span id="game-status">Waiting</span><span id="strike-count"></span>
+        <div class="game-actions">
+          <select id="weapon-select" aria-label="Weapon"><option value="knife">Knife</option><option value="pistol">Pistol</option><option value="crossbow">Crossbow</option></select>
+          <select id="disguise-select" aria-label="Disguise"><option value="stump">Stump</option><option value="boulder">Boulder</option><option value="bush">Bush</option></select>
+          <button id="lock-disguise" type="button">Lock disguise (E)</button><button id="strike-button" type="button">Strike</button>
+          <button id="mute-button" type="button">Mute</button><input id="master-volume" type="range" min="0" max="1" step="0.05" value="0.65" aria-label="Master volume" />
+        </div>
+      </section>
+      <div id="hunter-blackout" hidden>YOU ARE THE HUNTER<span>HIDERS ARE HIDING</span></div>
+      <div id="danger-pulse" aria-hidden="true"></div>
+      <section id="scoreboard-screen" class="front-screen" hidden><div class="front-card"><h2 id="round-result"></h2><ul id="scoreboard-list" class="player-list"></ul><button id="next-round" type="button">Next round</button><button id="new-match" type="button" hidden>New match</button></div></section>
       <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Building the cabin, crops, camps and shore details</small></div>
       <div id="toast" class="toast" aria-live="polite"></div>
     </main>

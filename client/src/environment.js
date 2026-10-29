@@ -778,7 +778,7 @@ export async function createEnvironment(map, river, scene) {
   console.info('[placement-report] environment', placementReport);
   if (import.meta.env.DEV) {
     window.__environmentPlacementReport = placementReport;
-    window.__environmentObjectPositions = objects.map(({ type, model, zone, x, z, footprintRadius }) => ({ type, model, zone, x, z, footprintRadius }));
+    window.__environmentObjectPositions = objects.map(({ type, model, zone, x, z, footprintRadius, scale, rotation }) => ({ type, model, zone, x, z, footprintRadius, scale, rotation }));
     window.__environmentColliders = colliders;
   }
 

@@ -39,3 +39,57 @@ export const GROUND_PATCH_NOISE_SCALE_LARGE = 0.026;
 export const GROUND_PATCH_NOISE_SCALE_SMALL = 0.073;
 export const GROUND_PATCH_NOISE_LARGE_WEIGHT = 0.68;
 export const GROUND_PATCH_BLEND_WIDTH = 0.04;
+
+// Multiplayer and match rules. Keep the map-shrink tuning above unchanged.
+export const GAME_TICK_HZ = 20;
+export const ROOM_CODE_LENGTH = 4;
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const MIN_PLAYERS = 2;
+export const MAX_PLAYERS = 6;
+export const PLAYER_NAME_MIN_LENGTH = 2;
+export const PLAYER_NAME_MAX_LENGTH = 14;
+export const PLAYER_REJOIN_SECONDS = 30;
+export const HIDER_DISGUISE_SPEED_FACTOR = 0.7;
+export const DISGUISE_LOCK_RADIUS = 3;
+export const DISGUISE_LOCK_CLUSTER_COUNT = 2;
+export const HUNTER_TOTAL_STRIKES = 3;
+export const KNIFE_RANGE = 2;
+export const KNIFE_COOLDOWN_MS = 600;
+export const PISTOL_CONE_DEGREES = 40;
+export const PISTOL_REVEAL_MS = 2000;
+export const CROSSBOW_RELOAD_MS = 1800;
+export const ROUND_INTERMISSION_MS = 5000;
+export const WASTED_STRIKE_SCORE = 0;
+export const HUNTER_CATCH_SCORE = 100;
+export const HUNTER_SWEEP_BONUS = 50;
+export const HIDER_SURVIVAL_BONUS = 100;
+export const PISTOL_REVEAL_RADIUS = 36;
+export const SHARED_MOVE_SUBSTEPS = 4;
+export const LAND_MOVE_SPEED = 7.2;
+export const SHALLOW_WATER_SPEED_FACTOR = 0.65;
+export const DEEP_WATER_SPEED_FACTOR = 0.45;
+export const DEEP_CHANNEL_THRESHOLD = 0.58;
+export const PISTOL_COOLDOWN_MS = 250;
+export const CROSSBOW_CONE_DEGREES = 120;
+export const PLAYER_COLLISION_RADIUS = 0.22;
+export const MOVEMENT_SUBSTEP_DISTANCE = 0.25;
+export const MAP_PLAYER_EDGE_MARGIN = 1;
+export const PROP_STRIKE_RADIUS = 0.55;
+export const PLAYER_HIT_RADIUS = 0.4;
+export const DEBUG_BOT_MAX_COUNT = 2;
+export const DEBUG_BOT_RETHINK_MS = 2200;
+export const REMOTE_INTERPOLATION_FACTOR = 0.28;
+export const SERVER_POSITION_SNAP_THRESHOLD = 0.8;
+export const CATCH_SCREEN_SHAKE_MS = 300;
+export const DISGUISE_TINT_STRENGTH = 0.64;
+export const TERRAIN_CONFIG = {
+  broadNoiseFrequency: 0.022, detailNoiseFrequency: 0.065,
+  broadAmplitude: 0.3, detailAmplitude: 0.2,
+  zoneCFlattenStart: 4, zoneCFlattenEnd: 35, zoneCAmplitudeFactor: 0.82,
+  pathFlattenStart: 0.25, pathFlattenEnd: 5,
+  riverExtension: 42, riverFlattenEnd: 5,
+  yardCenterX: 207, yardCenterZ: 92, yardCenterOffsetZ: 4, yardFlatRadius: 13, yardBlendRadius: 16,
+  campFlatRadius: 4.5, campBlendRadius: 7, cropFieldRadiusX: 3.9, cropFieldRadiusZ: 2.9,
+  fieldFlattenStart: 0.82, fieldFlattenEnd: 1.25,
+  marshFieldCenterX: 144.25, marshFieldCenterZ: 98, marshFieldRadiusX: 3.4, marshFieldRadiusZ: 2.6,
+};

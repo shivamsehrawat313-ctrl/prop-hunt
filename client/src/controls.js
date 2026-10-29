@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { DEEP_CHANNEL_THRESHOLD, DEEP_WATER_SPEED_FACTOR, LAND_MOVE_SPEED, SHALLOW_WATER_SPEED_FACTOR, bridgeAt, waterDepth } from '../../shared/water.js';
+import { LAND_MOVE_SPEED, bridgeAt, waterDepth } from '../../shared/water.js';
+import { movePlayer } from '../../shared/movement.js';
 import { CAMERA_DISTANCE, CAMERA_REFERENCE_HEIGHT, CAMERA_TILT_DEGREES } from '../../shared/constants.js';
 import { terrainHeightAt } from './terrain.js';
 
@@ -16,6 +17,8 @@ export class PlayerControls {
     this.keys = new Set();
     this.position = new THREE.Vector3(map.spawn.x, 0, map.spawn.y);
     this.speed = LAND_MOVE_SPEED;
+    this.speedFactor = 1;
+    this.onInput = null;
     this.cameraTiltRadians = THREE.MathUtils.degToRad(CAMERA_TILT_DEGREES);
     this.zoneId = 'A';
     this.boundDown = (event) => {
@@ -32,17 +35,12 @@ export class PlayerControls {
     const dz = (this.keys.has('s') || this.keys.has('arrowdown') ? 1 : 0) - (this.keys.has('w') || this.keys.has('arrowup') ? 1 : 0);
     const length = Math.hypot(dx, dz);
     if (length > 0) {
-      const bridge = bridgeAt(this.position.x, this.position.z, this.map);
-      const depth = waterDepth(this.position.x, this.position.z, this.map);
-      const speedFactor = bridge ? 1 : depth === 0 ? 1 : depth >= DEEP_CHANNEL_THRESHOLD ? DEEP_WATER_SPEED_FACTOR : SHALLOW_WATER_SPEED_FACTOR;
-      const stepX = (dx / length) * this.speed * speedFactor * delta;
-      const stepZ = (dz / length) * this.speed * speedFactor * delta;
-      const nextX = THREE.MathUtils.clamp(this.position.x + stepX, this.map.bounds.minX + 1, this.map.bounds.maxX - 1);
-      const nextZ = THREE.MathUtils.clamp(this.position.z + stepZ, this.map.bounds.minY + 1, this.map.bounds.maxY - 1);
-      if (this.canOccupy(nextX, this.position.z)) this.position.x = nextX;
-      if (this.canOccupy(this.position.x, nextZ)) this.position.z = nextZ;
+      const moved = movePlayer(this.position, { x: dx, z: dz }, delta, { map: this.map, colliders: this.colliders, speed: this.speed, speedFactor: this.speedFactor });
+      this.position.x = moved.x;
+      this.position.z = moved.z;
       this.player.rotation.y = Math.atan2(-dx, -dz);
     }
+    this.onInput?.({ x: dx, z: dz });
     this.position.y = terrainHeightAt(this.position.x, this.position.z, this.map);
     const depth = waterDepth(this.position.x, this.position.z, this.map);
     this.waterEffects.update(this.position, depth, Boolean(bridgeAt(this.position.x, this.position.z, this.map)), length > 0, delta);
@@ -62,11 +60,6 @@ export class PlayerControls {
       this.zoneId = zone;
       this.onZoneChange(this.map.zones.find((item) => item.id === zone)?.name || 'FOREST');
     }
-  }
-
-  canOccupy(x, z) {
-    const playerRadius = 0.22;
-    return !this.colliders.some((circle) => Math.hypot(x - circle.x, z - circle.z) < playerRadius + circle.radius);
   }
 
   dispose() {

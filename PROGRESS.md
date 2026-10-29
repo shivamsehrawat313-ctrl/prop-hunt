@@ -406,5 +406,16 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Path graph: 23 nodes, 27 edges, connected.
 - Shared server/client water map: matched.
 - Browser console errors: 0.
-- FPS: 60; draw calls: 100.
+- FPS: 60; draw calls: 131.
 - Placement removals: 0; 1C clearance removals: 0.
+
+## Phase A: multiplayer core — done
+
+- Added authoritative Socket.IO rooms with four-character codes, 2–6 players, ready/start lobby, disconnect cleanup, 30-second name rejoin, host promotion, and 20 Hz movement snapshots.
+- Added hide/hunt rounds, rotating hunters, weapon selection and server cooldown/range/strike validation, decoy misses, catches, timers, scoring, round/final scoreboard, and local `?bots=2` support.
+- Shared movement, collision circles, terrain height, water queries, and scaled map loading now run on both client and server. The collision and hider-decoy data are exported from the current seeded world.
+- Added landing and lobby screens over `/media/lobby.mp4`, room invites/copy actions, gameplay controls, hunter hide blackout, and a scoreboard.
+- Tests: `npm run test:multiplayer` passed timer expiry, strikes exhausted, all hiders caught, disguise cluster lock, solo bots, and one-hunter-per-player rotation. `npm run build` passed.
+- Rough: player visibility is not yet filtered server-side, gameplay audio and mobile controls remain for later phases, and production deployment setup is incomplete.
+- Next exact step: complete Phase B static deployment, README, and Render configuration; verify `npm run build` then `npm start`, `/health`, model/map/media serving, and the multiplayer bot suite.
+- Commands: `npm install`; `npm run test:multiplayer`; `npm run build`; `npm start`.

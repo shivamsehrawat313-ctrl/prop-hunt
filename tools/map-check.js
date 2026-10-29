@@ -88,7 +88,10 @@ async function queryRuntimeReport() {
     });
     socket.addEventListener('message', (event) => {
       const message = JSON.parse(event.data);
-      if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') consoleErrors.push(message.params.args.map((arg) => arg.value || arg.description || '').join(' '));
+      if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
+        const detail = message.params.args.map((arg) => arg.value || arg.description || '').join(' ');
+        if (!detail.includes('[vite] failed to connect to websocket')) consoleErrors.push(detail);
+      }
       if (!message.id) return;
       const entry = pending.get(message.id); if (!entry) return;
       pending.delete(message.id); message.error ? entry.reject(new Error(message.error.message)) : entry.resolve(message.result);
@@ -249,6 +252,13 @@ if (maximumTerrainSlope > MAX_TERRAIN_SLOPE) throw new Error(`Terrain slope ${ma
 
 const serverCheck = await verifyServerUsesSharedMap(map);
 const runtime = process.argv.includes('--no-runtime') ? null : await queryRuntimeReport();
+if (runtime?.report && process.argv.includes('--export-world-data')) {
+  const decoyTypes = { hiderStumps: 'stump', hiderBoulders: 'boulder', hiderBushes: 'bush' };
+  const decoys = runtime.positions.filter((item) => decoyTypes[item.type]).map((item, index) => ({ id: `decoy-${index}`, type: decoyTypes[item.type], model: item.model, x: item.x, z: item.z, scale: item.scale || 1, rotation: item.rotation || 0 }));
+  const colliders = runtime.colliders.filter((item) => Number.isFinite(item.x) && Number.isFinite(item.z) && Number.isFinite(item.radius) && item.radius > 0).map((item) => ({ x: item.x, z: item.z, radius: item.radius, type: item.type || 'obstacle' }));
+  await writeFile(resolve(projectDir, 'shared/decoys.json'), `${JSON.stringify(decoys, null, 2)}\n`, 'utf8');
+  await writeFile(resolve(projectDir, 'shared/worldColliders.json'), `${JSON.stringify(colliders, null, 2)}\n`, 'utf8');
+}
 if (runtime?.report && process.argv.includes('--debug')) console.error(JSON.stringify({ cropFields: runtime.report.cropFields, cropRowReport: runtime.report.byZone.B.cropRows, hiderCounts: runtime.report.hiderCountsByZone, trees: runtime.report.treeThinning.afterValidation, boats: runtime.report.milestone1C.boats, flowers: runtime.report.milestone1C.flowers, removed: runtime.report.removedOnValidation, nudgedObjects: runtime.report.nudgedObjects }, null, 2));
 if (runtime?.report) validateRuntime(runtime, map);
 const currentCounts = addRuntimeCountRows(runtime);
@@ -298,7 +308,7 @@ const progress = [
   `- Placement removals: ${runtime?.report?.removedOnValidation ?? 'runtime unavailable'}; 1C clearance removals: ${runtime?.report?.clearedFor1C ?? 'runtime unavailable'}.`,
   '',
 ].join('\n');
-await writeFile(resolve(projectDir, 'PROGRESS.md'), progress, 'utf8');
+if (runtime?.report) await writeFile(resolve(projectDir, 'PROGRESS.md'), progress, 'utf8');
 
 console.log(JSON.stringify({
   map: mapStats, graph: graphStats, serverCheck, pathLength: { before: round(beforePathLength), after: round(afterPathLength) },
