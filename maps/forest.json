@@ -1,0 +1,78 @@
+{
+  "id": "forest",
+  "name": "Shadow Hunt Forest",
+  "seed": 73241,
+  "bounds": { "minX": 0, "minY": 0, "maxX": 240, "maxY": 120 },
+  "zones": [
+    { "id": "A", "name": "Pine Hollow", "minX": 0, "maxX": 80, "minY": 0, "maxY": 120 },
+    { "id": "B", "name": "Marsh Wood", "minX": 80, "maxX": 160, "minY": 0, "maxY": 120 },
+    { "id": "C", "name": "Cabin Clearing", "minX": 160, "maxX": 240, "minY": 0, "maxY": 120 }
+  ],
+  "river": {
+    "width": 6.5,
+    "bankScale": 1.12,
+    "centerline": [
+      [58, 120], [44, 95], [36, 80], [50, 70], [63, 64], [70, 60], [70, 54],
+      [65, 48], [52, 44], [60, 27], [80, 18], [98, 29], [110, 50], [120, 75],
+      [135, 88], [152, 82], [168, 72], [176, 66], [176, 60], [176, 54], [185, 48],
+      [199, 32], [218, 26], [240, 50]
+    ],
+    "widthKeys": [[0, 5.0], [0.15, 6.4], [0.34, 5.2], [0.56, 8.0], [0.78, 5.8], [1, 6.8]],
+    "bridgeConfig": {
+      "modelPath": "bridge_woodRound.glb",
+      "deckWidth": 3.0,
+      "bankMargin": 1.5,
+      "groundClearance": 0.055,
+      "modelHeightScale": 0.35
+    },
+    "crossings": [
+      { "id": "XA", "x": 70, "y": 60, "zone": "A", "bridgeModelPath": null },
+      { "id": "XB", "x": 52, "y": 44, "zone": "A", "bridgeModelPath": null },
+      { "id": "XC", "x": 120, "y": 75, "zone": "B", "bridgeModelPath": null },
+      { "id": "XD", "x": 176, "y": 60, "zone": "C", "bridgeModelPath": null }
+    ]
+  },
+  "paths": {
+    "styleId": "stone-field",
+    "width": 3.0,
+    "clearance": 1.5,
+    "waterClearance": 1.0,
+    "style": {
+      "models": ["rock_smallTopA.glb", "stone_smallTopA.glb"],
+      "spacing": 0.8,
+      "lateralSpacing": 0.75,
+      "scaleRange": [0.82, 1.42],
+      "rotationRange": [0, 6.283185],
+      "seed": 73241,
+      "tint": "#819b99",
+      "stoneTint": "#a5b7ad"
+    },
+    "nodes": [
+      { "id": "A0", "x": 8, "y": 60 }, { "id": "A1", "x": 35, "y": 60 },
+      { "id": "XA", "x": 70, "y": 60 }, { "id": "A2", "x": 76, "y": 60 },
+      { "id": "XB", "x": 52, "y": 44 }, { "id": "B0", "x": 82, "y": 60 },
+      { "id": "B1", "x": 110, "y": 60 }, { "id": "XC", "x": 120, "y": 75 },
+      { "id": "B3", "x": 137, "y": 60 }, { "id": "B4", "x": 156, "y": 60 },
+      { "id": "C0", "x": 164, "y": 60 }, { "id": "XD", "x": 176, "y": 60 },
+      { "id": "C1", "x": 190, "y": 60 }, { "id": "C3", "x": 220, "y": 60 },
+      { "id": "C4", "x": 236, "y": 60 }, { "id": "A-loop-n", "x": 20, "y": 85 },
+      { "id": "A-loop-s", "x": 28, "y": 36 }, { "id": "B-loop-s", "x": 94, "y": 36 },
+      { "id": "B-log", "x": 112, "y": 98 }, { "id": "B-ring", "x": 138, "y": 29 },
+      { "id": "C-yard-n", "x": 207, "y": 82 }, { "id": "C-yard-s", "x": 214, "y": 76 },
+      { "id": "C-dead-end", "x": 231, "y": 82 }
+    ],
+    "edges": [
+      ["A0", "A1"], ["A1", "XA"], ["XA", "A2"], ["A2", "B0"], ["B0", "B1"],
+      ["B1", "XC"], ["XC", "B3"], ["B3", "B4"], ["B4", "C0"],
+      ["C0", "XD"], ["XD", "C1"], ["C1", "C3"], ["C3", "C4"],
+      ["A0", "A-loop-n"], ["A-loop-n", "A1"], ["A1", "A-loop-s"], ["A-loop-s", "XB"], ["XB", "A2"],
+      ["B0", "B-loop-s"], ["B-loop-s", "XC"], ["B1", "B-log"], ["B3", "B-ring"], ["B-ring", "B4"],
+      ["C1", "C-yard-n"], ["C-yard-n", "C-yard-s"], ["C-yard-s", "C3"], ["C3", "C-dead-end"]
+    ],
+    "edgeRoutes": {
+      "XB|A2": [[52, 44], [57, 48], [63, 49], [70, 50], [74, 51], [75, 54], [76, 60]]
+    }
+  },
+  "lighting": { "ambient": 1.25, "hemisphere": 1.6, "key": 2.1, "riverGlow": 1.8 },
+  "spawn": { "x": 8, "y": 60 }
+}

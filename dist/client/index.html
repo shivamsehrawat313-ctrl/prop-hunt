@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102c2a" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Shadow Hunt — Pine Hollow</title>
+    <script type="module" crossorigin src="/assets/index-Dlvf6tfP.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cr7sZfTW.css">
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="scene" aria-label="Shadow Hunt game view"></canvas>
+      <section class="hud hud-top-left" aria-label="Game status">
+        <div class="brand">SHADOW HUNT <span>FIELD TEST · 1C</span></div>
+        <div id="zone-label" class="zone-label">PINE HOLLOW</div>
+        <div class="coord-label">Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys</div>
+      </section>
+      <section class="hud minimap-frame" aria-label="Map">
+        <canvas id="minimap" width="240" height="120"></canvas>
+        <span>FOREST OVERVIEW</span>
+      </section>
+      <section class="hud debug-panel" aria-label="Performance">
+        <div>FPS <b id="fps">—</b></div>
+        <div>DRAW CALLS <b id="draw-calls">—</b></div>
+        <div>QUALITY <b id="quality-label">HIGH</b></div>
+        <div id="world-scale" class="world-scale" aria-label="World scale"></div>
+      </section>
+      <section class="hud controls-panel" aria-label="Display and audio controls">
+        <div class="quality-row">
+          <span>QUALITY</span>
+          <button data-quality="high" class="quality-button active">HIGH</button>
+          <button data-quality="medium" class="quality-button">MED</button>
+          <button data-quality="low" class="quality-button">LOW</button>
+        </div>
+        <button id="audio-unlock" class="audio-button">UNLOCK AUDIO</button>
+      </section>
+      <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Building the cabin, crops, camps and shore details</small></div>
+      <div id="toast" class="toast" aria-live="polite"></div>
+    </main>
+  </body>
+</html>
