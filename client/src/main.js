@@ -13,11 +13,25 @@ import {
   CAMERA_FIELD_OF_VIEW_DEGREES,
   CAMERA_ZOOM,
   CATCH_SCREEN_SHAKE_MS,
+  HIDER_SIGHT_RADIUS,
+  HUNTER_CLOSE_CIRCLE_RANGE,
+  HUNTER_CONE_RANGE,
+  HUNTER_VIEW_CONE_DEGREES,
   DISGUISE_TINT_STRENGTH,
   HIDER_DISGUISE_SPEED_FACTOR,
+  HEARTBEAT_INTERVALS_MS,
+  HEARTBEAT_PEAK_VOLUME,
   PLAYER_HEIGHT_UNITS,
   REMOTE_INTERPOLATION_FACTOR,
   SERVER_POSITION_SNAP_THRESHOLD,
+  VISION_CANVAS_MAX_DPR,
+  VISION_FOG_BLUR_PX,
+  VISION_FOG_DRAW_INTERVAL_MS,
+  VISION_FOG_FEATHER_FRACTION,
+  VISION_FOG_MIN_FEATHER_PX,
+  VISION_FOG_MIN_SCREEN_RADIUS_PX,
+  VISION_FOG_OPACITY,
+  VISION_FOG_REVEAL_RADIUS_UNITS,
 } from '../../shared/constants.js';
 import './style.css';
 import { MultiplayerClient } from './multiplayer.js';
@@ -25,6 +39,8 @@ import { loadModel } from './modelLoader.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
 
 const canvas = document.querySelector('#scene');
+const visionCanvas = document.querySelector('#vision-fog');
+const visionContext = visionCanvas.getContext('2d');
 const loading = document.querySelector('#loading');
 const toast = document.querySelector('#toast');
 const zoneLabel = document.querySelector('#zone-label');
@@ -67,6 +83,11 @@ const disguiseModels = { stump: 'stump_squareDetailed.glb', boulder: 'rock_small
 const disguiseTints = { stump: '#648177', boulder: '#718b89', bush: '#64836f' };
 let quality = 'high';
 let environment;
+let myRole = null;
+let lastVisionDraw = 0;
+let visionCanvasSize = { width: 0, height: 0, pixelRatio: 0 };
+let heartbeatTimer = null;
+let heartbeatLevel = 0;
 let frameCount = 0;
 let fpsAt = performance.now();
 let toastTimer;
@@ -87,10 +108,13 @@ async function setPlayerView(snapshot, local = false) {
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: snapshot.role === 'hunter' ? '#b6ead6' : '#91cdbb', roughness: 0.9, flatShading: true });
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.42, 3, 6), bodyMaterial); body.position.y = 0.31; group.add(body);
     const hood = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), bodyMaterial); hood.position.y = 0.65; group.add(hood);
-    scene.add(group); view = { group, target: new THREE.Vector3(snapshot.x, 0, snapshot.z), modelType: null, loading: false };
+    const shimmer = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.018, 4, 24), new THREE.MeshBasicMaterial({ color: '#b9fff0', transparent: true, opacity: 0.82, depthWrite: false }));
+    shimmer.rotation.x = -Math.PI / 2; shimmer.position.y = 0.06; shimmer.visible = false; group.add(shimmer);
+    scene.add(group); view = { group, target: new THREE.Vector3(snapshot.x, 0, snapshot.z), modelType: null, loading: false, shimmer };
     playerViews.set(snapshot.id, view);
   }
   view.target.set(snapshot.x, 0, snapshot.z);
+  view.shimmer.visible = Boolean(snapshot.shimmer);
   view.group.rotation.y = snapshot.locked ? (snapshot.disguiseRotation || 0) : Math.atan2(-snapshot.aim?.x || 0, -snapshot.aim?.z || 1);
   const desiredModel = snapshot.locked && snapshot.disguise ? snapshot.disguise : null;
   view.group.visible = !snapshot.caught;
@@ -102,7 +126,7 @@ async function setPlayerView(snapshot, local = false) {
       clone.traverse((object) => {
         if (!object.isMesh) return;
         const tint = new THREE.Color(disguiseTints[desiredModel]);
-        const grade = (material) => { const copy = material.clone(); if (copy.color) copy.color.lerp(tint, DISGUISE_TINT_STRENGTH); return copy; };
+        const grade = (material) => { const copy = material.clone(); if (copy.color) copy.color.lerp(tint, DISGUISE_TINT_STRENGTH); if (copy.emissive) { copy.emissive.lerp(tint, 0.28); copy.emissiveIntensity = 0.24; } copy.roughness = Math.max(copy.roughness ?? 0.8, 0.94); return copy; };
         object.material = Array.isArray(object.material) ? object.material.map(grade) : grade(object.material);
         object.castShadow = false; object.receiveShadow = false;
       });
@@ -124,9 +148,20 @@ async function setPlayerView(snapshot, local = false) {
 }
 
 function applyRoomState(room, me) {
+  myRole = me?.role || null;
+  const visibleIds = new Set();
+  if (['hide', 'hunt'].includes(room.phase)) resize();
   if (controls && me) {
     controls.speedFactor = room.phase === 'hide' && me.role === 'hunter' ? 0 : me.role === 'hider' && me.disguise ? HIDER_DISGUISE_SPEED_FACTOR : 1;
-    for (const other of room.players) setPlayerView(other, other.id === me.id);
+    for (const other of room.players) { visibleIds.add(other.id); setPlayerView(other, other.id === me.id); }
+    for (const [index, disguise] of (room.disguises || []).entries()) {
+      const id = `masked-${disguise.id || index}`; visibleIds.add(id);
+      setPlayerView({ id, role: 'hider', x: disguise.x, z: disguise.z, locked: true, disguise: disguise.type, disguiseScale: disguise.scale, disguiseRotation: disguise.rotation, shimmer: disguise.shimmer, alive: true, caught: false }, false);
+    }
+    for (const [id, view] of playerViews) if (id !== me.id && !visibleIds.has(id)) { scene.remove(view.group); playerViews.delete(id); }
+    const danger = document.querySelector('#danger-pulse');
+    danger.dataset.level = String(me.role === 'hider' ? room.dangerLevel || 0 : 0);
+    setHeartbeat(me.role === 'hider' ? room.dangerLevel || 0 : 0);
   }
   if (import.meta.env.DEV) window.__multiplayerState = room;
 }
@@ -145,12 +180,17 @@ multiplayer = new MultiplayerClient({
 });
 
 function resize() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
+  const width = Math.max(1, canvas.clientWidth);
+  const height = Math.max(1, canvas.clientHeight);
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, VISION_CANVAS_MAX_DPR);
+  if (width === visionCanvasSize.width && height === visionCanvasSize.height && pixelRatio === visionCanvasSize.pixelRatio) return;
+  visionCanvasSize = { width, height, pixelRatio };
   renderer.setSize(width, height, false);
   camera.aspect = width / Math.max(1, height);
   camera.zoom = CAMERA_ZOOM;
   camera.updateProjectionMatrix();
+  visionCanvas.width = Math.round(width * pixelRatio); visionCanvas.height = Math.round(height * pixelRatio);
+  visionContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -272,6 +312,28 @@ async function unlockAudio() {
   if (!AudioContextClass) return;
   audioContext ||= new AudioContextClass();
   if (audioContext.state !== 'running') await audioContext.resume();
+  setHeartbeat(heartbeatLevel);
+}
+
+function heartbeatThump(delaySeconds, frequency, peak) {
+  if (!audioContext || audioContext.state !== 'running') return;
+  const start = audioContext.currentTime + delaySeconds;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.001, start); gain.gain.linearRampToValueAtTime(peak, start + 0.025); gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+  oscillator.connect(gain); gain.connect(audioContext.destination); oscillator.start(start); oscillator.stop(start + 0.19);
+}
+
+function setHeartbeat(level) {
+  const nextLevel = Math.max(0, Math.min(3, Math.floor(level || 0)));
+  if (nextLevel === heartbeatLevel && (nextLevel === 0 || heartbeatTimer)) return;
+  heartbeatLevel = nextLevel;
+  clearInterval(heartbeatTimer); heartbeatTimer = null;
+  if (heartbeatLevel === 0 || !audioContext || audioContext.state !== 'running') return;
+  const interval = HEARTBEAT_INTERVALS_MS[heartbeatLevel];
+  const beat = () => { heartbeatThump(0, 58, HEARTBEAT_PEAK_VOLUME * heartbeatLevel / 3); heartbeatThump(0.16, 48, HEARTBEAT_PEAK_VOLUME * heartbeatLevel / 3); };
+  beat(); heartbeatTimer = setInterval(beat, interval);
 }
 
 const aimRaycaster = new THREE.Raycaster();
@@ -303,6 +365,7 @@ function animate(now) {
     view.group.position.y = terrainHeightAt(view.group.position.x, view.group.position.z, map);
   }
   environment?.update(player.position, now / 1000);
+  if (now - lastVisionDraw >= VISION_FOG_DRAW_INTERVAL_MS) { drawVisionFog(); lastVisionDraw = now; }
   river.update(now / 1000);
   renderer.render(scene, camera);
   frameCount += 1;
@@ -312,6 +375,46 @@ function animate(now) {
     frameCount = 0;
     fpsAt = now;
   }
+}
+
+function worldToScreen(x, y, z) {
+  const point = new THREE.Vector3(x, y, z).project(camera);
+  return { x: (point.x * 0.5 + 0.5) * visionCanvas.clientWidth, y: (-point.y * 0.5 + 0.5) * visionCanvas.clientHeight };
+}
+
+function clearVisionDisc(ctx, x, y, radius) {
+  const feather = Math.max(VISION_FOG_MIN_FEATHER_PX, radius * VISION_FOG_FEATHER_FRACTION);
+  const gradient = ctx.createRadialGradient(x, y, Math.max(0, radius - feather), x, y, radius + feather);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)'); gradient.addColorStop(0.76, 'rgba(255,255,255,0.96)'); gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x, y, radius + feather, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawVisionFog() {
+  const ctx = visionContext;
+  const width = visionCanvas.clientWidth; const height = visionCanvas.clientHeight;
+  ctx.clearRect(0, 0, width, height);
+  if (!controls || !['hider', 'hunter'].includes(myRole) || !multiplayer.room || !['hide', 'hunt'].includes(multiplayer.room.phase)) return;
+  ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(4, 14, 17, ${VISION_FOG_OPACITY})`; ctx.fillRect(0, 0, width, height);
+  ctx.globalCompositeOperation = 'destination-out'; ctx.filter = quality === 'low' ? 'none' : `blur(${VISION_FOG_BLUR_PX}px)`;
+  const center = worldToScreen(controls.position.x, controls.position.y + 0.1, controls.position.z);
+  const xEdge = worldToScreen(controls.position.x + 1, controls.position.y + 0.1, controls.position.z);
+  const zEdge = worldToScreen(controls.position.x, controls.position.y + 0.1, controls.position.z + 1);
+  const pixelsPerUnit = (Math.hypot(xEdge.x - center.x, xEdge.y - center.y) + Math.hypot(zEdge.x - center.x, zEdge.y - center.y)) * 0.5;
+  const eraseCircle = (wx, wz, units) => { const point = worldToScreen(wx, terrainHeightAt(wx, wz, map) + 0.1, wz); clearVisionDisc(ctx, point.x, point.y, Math.max(VISION_FOG_MIN_SCREEN_RADIUS_PX, units * pixelsPerUnit)); };
+  if (myRole === 'hider') {
+    eraseCircle(controls.position.x, controls.position.z, HIDER_SIGHT_RADIUS);
+    if (multiplayer.room.hunterPosition) eraseCircle(multiplayer.room.hunterPosition.x, multiplayer.room.hunterPosition.z, VISION_FOG_REVEAL_RADIUS_UNITS);
+  } else {
+    eraseCircle(controls.position.x, controls.position.z, HUNTER_CLOSE_CIRCLE_RANGE);
+    const aim = multiplayer.input?.aim || { x: 0, z: 1 };
+    const length = Math.hypot(aim.x, aim.z) || 1;
+    const end = worldToScreen(controls.position.x + aim.x / length * HUNTER_CONE_RANGE, controls.position.y + 0.1, controls.position.z + aim.z / length * HUNTER_CONE_RANGE);
+    const r = Math.max(VISION_FOG_MIN_SCREEN_RADIUS_PX, Math.hypot(end.x - center.x, end.y - center.y));
+    const angle = Math.atan2(end.y - center.y, end.x - center.x);
+    const halfAngle = Math.PI * HUNTER_VIEW_CONE_DEGREES / 360;
+    ctx.beginPath(); ctx.moveTo(center.x, center.y); ctx.arc(center.x, center.y, r, angle - halfAngle, angle + halfAngle); ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.96)'; ctx.fill();
+  }
+  ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
 }
 
 requestAnimationFrame(animate);

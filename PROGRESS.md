@@ -425,4 +425,17 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Added `npm start` for the production Node host and a Render Blueprint using `npm ci`, `npm run build`, `/health`, and `npm start`.
 - Reworked the README with local development, production run, controls, tests, and Render setup. The client and Socket.IO use one origin; the map and generated model/media assets are served with the built client.
 - Verification: `npm run build` and `npm run test:multiplayer` passed. Started the production server on `PORT=3107`; `/`, `/health`, `/maps/forest.json`, `/models/barrel-open.glb`, `/media/lobby.mp4`, and the Socket.IO polling handshake all returned HTTP 200. Stopped the server cleanly.
+- Render settings: build `npm ci && npm run build`; start `npm start`; environment `NODE_ENV=production` (Render provides `PORT`; optionally set `CLIENT_ORIGIN` only for a separate client host).
 - Next exact step: Phase C server-side visibility, line of sight, danger, and fog. Do not alter the finished world layout.
+- Commands: `npm install`; `npm run test:multiplayer`; `npm run build`; `npm start`.
+
+## Phase C: server-side vision — done
+
+- Replaced the room-wide position broadcast with per-viewer snapshots. Hiders receive only themselves, nearby hiders in line of sight, danger level, and the hunter position only during the timed pistol reveal. Hunter and host IDs are withheld from hiders during active rounds.
+- Hunter sight uses the existing range/circle constants, an added named view angle, and 2D prop occlusion against shared tree, rock, building, log, fence, and bush/stump/boulder blockers. Strikes also reject targets blocked by those objects.
+- Locked hiders are serialized as anonymous decoy-shaped prop entities; moving ones shimmer only inside the named near range. Hiders get danger levels and edge pulses; after audio unlock, a synthesized heartbeat speeds up with danger. Added a softened darkness mask with a small circle/cone and a cheaper Low quality path. Water movement within hearing range emits a hunter-only splash event for gameplay audio in Phase D.
+- Fixed viewport sizing so the game canvas is resized when gameplay becomes visible and not reset on every network snapshot. Made bot-only validation errors safe when no Socket.IO socket exists.
+- Tests: `npm test` passed the multiplayer suite plus vision assertions for tree occlusion, cone visibility, hidden IDs/positions, reveal expiry, danger, and anonymous disguises/shimmer. `npm run build` passed.
+- Rough: heartbeats currently use a simple synthesized double pulse and will be integrated with the full Phase D audio system. Full client visual tuning remains unmeasured; the map and its layout were untouched.
+- Next exact step: Phase D synthesized gameplay audio, model loading progress, short how-to, and hit/tracer effects.
+- Commands: `npm test`; `npm run build`; `npm start`.

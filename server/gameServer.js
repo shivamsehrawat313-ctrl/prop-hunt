@@ -1,7 +1,8 @@
 import { randomInt, randomUUID } from 'node:crypto';
+import { makeViewerState, hasLineOfSight } from './visibility.js';
 import map from '../shared/map.js';
 import { DECOY_ENTITIES } from '../shared/decoys.js';
-import { WORLD_COLLIDERS } from '../shared/world.js';
+import { WORLD_COLLIDERS, WORLD_VISION_BLOCKERS } from '../shared/world.js';
 import { movePlayer } from '../shared/movement.js';
 import { terrainHeightAt } from '../shared/terrainHeight.js';
 import {
@@ -9,11 +10,12 @@ import {
   CROSSBOW_CONE_DEGREES, GAME_TICK_HZ, HIDE_PHASE_SECONDS, HUNTER_CATCH_SCORE, HUNTER_CLOSE_CIRCLE_RANGE,
   HUNTER_CONE_RANGE, HUNTER_SWEEP_BONUS, HUNTER_TOTAL_STRIKES, HUNT_PHASE_SECONDS,
   KNIFE_COOLDOWN_MS, KNIFE_RANGE, MAX_PLAYERS, MIN_PLAYERS, PISTOL_CONE_DEGREES, PISTOL_COOLDOWN_MS,
-  PISTOL_RANGE, PISTOL_REVEAL_MS, PLAYER_HIT_RADIUS, PROP_STRIKE_RADIUS, PLAYER_NAME_MAX_LENGTH, PLAYER_NAME_MIN_LENGTH,
+  PISTOL_RANGE, PISTOL_REVEAL_MS, PISTOL_REVEAL_RADIUS, PLAYER_HIT_RADIUS, PROP_STRIKE_RADIUS, PLAYER_NAME_MAX_LENGTH, PLAYER_NAME_MIN_LENGTH,
   PLAYER_REJOIN_SECONDS, ROUND_INTERMISSION_MS, HIDER_DISGUISE_SPEED_FACTOR,
   HIDER_SURVIVAL_BONUS, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH,
-  DEBUG_BOT_MAX_COUNT, DEBUG_BOT_RETHINK_MS,
+  DEBUG_BOT_MAX_COUNT, DEBUG_BOT_RETHINK_MS, SPLASH_HEARING_DISTANCE, WATER_SPLASH_EVENT_COOLDOWN_MS,
 } from '../shared/constants.js';
+import { isInWater } from '../shared/water.js';
 
 const WEAPONS = new Set(['knife', 'pistol', 'crossbow']);
 const DISGUISES = new Set(['stump', 'boulder', 'bush']);
@@ -26,28 +28,25 @@ function randomCode() {
   return Array.from({ length: ROOM_CODE_LENGTH }, () => ROOM_CODE_ALPHABET[randomInt(ROOM_CODE_ALPHABET.length)]).join('');
 }
 
-function publicRoom(room, now) {
-  return {
-    code: room.code, hostId: room.hostId, phase: room.phase, phaseEndsAt: room.phaseEndsAt,
-    round: room.round, maxRounds: room.maxRounds, hunterId: room.hunterId,
-    strikes: room.strikes, weapon: room.weapon, winner: room.winner,
-    hunterRevealedUntil: room.hunterRevealedUntil,
-    players: [...room.players.values()].map((player) => ({ id: player.id, name: player.name, ready: player.ready, role: player.role, x: player.x, y: player.y, z: player.z, alive: player.alive, caught: player.caught, disguise: player.disguise, locked: player.locked, disguiseScale: player.disguiseScale, disguiseRotation: player.disguiseRotation, score: player.score, moving: player.moving, aim: player.aim, connected: player.connected, isBot: Boolean(player.isBot) })),
-    serverTime: now,
-  };
-}
-
 export function createGameService(io, {
   now = () => Date.now(), random = Math.random, setIntervalFn = setInterval, clearIntervalFn = clearInterval,
   hideMs = HIDE_PHASE_SECONDS * 1000, huntMs = HUNT_PHASE_SECONDS * 1000,
-  intermissionMs = ROUND_INTERMISSION_MS, colliders = WORLD_COLLIDERS, decoys = DECOY_ENTITIES,
+  intermissionMs = ROUND_INTERMISSION_MS, colliders = WORLD_COLLIDERS, visionBlockers = WORLD_VISION_BLOCKERS, decoys = DECOY_ENTITIES,
 } = {}) {
   const rooms = new Map();
   const connections = new Map();
   const tickMs = 1000 / GAME_TICK_HZ;
 
-  const emitRoom = (room, event = 'room:state') => io.to(room.code).emit(event, publicRoom(room, now()));
-  const sendError = (socket, code) => socket.emit('room:error', { code, message: ({
+  const publicRoom = (room, time = now(), viewerId = null) => makeViewerState(room, time, viewerId, { blockers: visionBlockers, decoys });
+  const emitRoom = (room, event = 'room:state') => {
+    const time = now();
+    for (const player of room.players.values()) {
+      if (!player.connected || player.isBot) continue;
+      const socket = io.sockets.sockets.get(player.id);
+      socket?.emit(event, publicRoom(room, time, player.id));
+    }
+  };
+  const sendError = (socket, code) => socket?.emit('room:error', { code, message: ({
     NOT_FOUND: 'Room not found', FULL: 'Room full', STARTED: 'Game already started', NAME: 'Enter your name',
     BAD_CODE: 'Enter a valid 4-letter room code', HOST: 'Only the host can do that', READY: 'All players must be ready',
     MIN_PLAYERS: 'At least 2 players are needed', PHASE: 'That action is unavailable now', DISGUISE: 'Choose a disguise first',
@@ -157,6 +156,7 @@ export function createGameService(io, {
     const addCandidate = (kind, id, x, z, hitRadius) => {
       const dx = x - attacker.x; const dz = z - attacker.z; const distance = Math.hypot(dx, dz);
       if (distance > range) return;
+      if (!hasLineOfSight(attacker, { x, z }, visionBlockers)) return;
       if (weapon === 'knife') { candidates.push({ kind, id, distance, along: distance }); return; }
       const along = dx * ax + dz * az;
       const perpendicular = Math.abs(dx * az - dz * ax);
@@ -171,7 +171,16 @@ export function createGameService(io, {
     const caught = selected?.kind === 'hider' ? room.players.get(selected.id) : null;
     if (caught) { caught.caught = true; caught.alive = false; caught.input = { x: 0, z: 0 }; }
     if (weapon === 'pistol') room.hunterRevealedUntil = time + PISTOL_REVEAL_MS;
-    io.to(room.code).emit('game:strike', { attackerId: attacker.id, weapon, hit: Boolean(caught), targetType: selected?.kind || null, caughtId: caught?.id || null, strikes: room.strikes, revealedUntil: room.hunterRevealedUntil, at: { x: attacker.x, z: attacker.z }, aim: { x: ax, z: az } });
+    const strikeEvent = { attackerId: attacker.id, weapon, hit: Boolean(caught), targetType: selected?.kind || null, caughtId: caught?.id || null, strikes: room.strikes, revealedUntil: room.hunterRevealedUntil, aim: { x: ax, z: az } };
+    for (const recipient of room.players.values()) {
+      if (!recipient.connected || recipient.isBot) continue;
+      const socket = io.sockets.sockets.get(recipient.id);
+      const maySeeLocation = recipient.id === attacker.id || (weapon === 'pistol' && recipient.role === 'hider' && Math.hypot(recipient.x - attacker.x, recipient.z - attacker.z) <= PISTOL_REVEAL_RADIUS);
+      const privateEvent = recipient.id === attacker.id
+        ? { ...strikeEvent, at: { x: attacker.x, z: attacker.z } }
+        : { ...strikeEvent, attackerId: undefined, ...(maySeeLocation ? { at: { x: attacker.x, z: attacker.z } } : {}) };
+      socket?.emit('game:strike', privateEvent);
+    }
     if ([...room.players.values()].filter((player) => player.role === 'hider' && player.alive).length === 0) finishRound(room, 'hunter', time);
     else if (room.strikes === 0) finishRound(room, 'hiders', time);
     emitRoom(room);
@@ -280,6 +289,16 @@ export function createGameService(io, {
           const speedFactor = player.role === 'hider' && player.disguise ? HIDER_DISGUISE_SPEED_FACTOR : 1;
           const result = movePlayer(player, player.input, tickMs / 1000, { map, colliders, speedFactor });
           player.x = result.x; player.z = result.z; player.y = terrainHeightAt(player.x, player.z, map);
+        }
+        const hunter = room.players.get(room.hunterId);
+        if (hunter?.connected && !hunter.isBot) {
+          for (const hider of room.players.values()) {
+            if (hider.role !== 'hider' || !hider.alive || !hider.connected || !hider.moving || !isInWater(hider.x, hider.z)) continue;
+            if (time - (hider.lastSplashAt || 0) < WATER_SPLASH_EVENT_COOLDOWN_MS) continue;
+            if (Math.hypot(hider.x - hunter.x, hider.z - hunter.z) > SPLASH_HEARING_DISTANCE) continue;
+            hider.lastSplashAt = time;
+            io.sockets.sockets.get(hunter.id)?.emit('game:event', { type: 'water-splash' });
+          }
         }
         emitRoom(room);
       }

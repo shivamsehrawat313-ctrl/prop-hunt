@@ -8,7 +8,9 @@
     "start": "node server/index.js",
     "preview": "vite preview --config vite.config.js --configLoader runner",
     "server": "node server/index.js",
-    "test:multiplayer": "node tools/test-multiplayer.js"
+    "test:multiplayer": "node tools/test-multiplayer.js",
+    "test:vision": "node tools/test-vision.js",
+    "test": "npm run test:multiplayer && npm run test:vision"
   },
   "dependencies": {
     "socket.io": "^4.8.1",

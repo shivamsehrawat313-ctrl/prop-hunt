@@ -35,6 +35,8 @@ async function makeMatch({ hideMs = 500, huntMs = 500, intermissionMs = 100 } = 
 function sharedState(clients) { return clients.find((client) => client.latest?.phase)?.latest || null; }
 function socketForId(clients, id) { return clients.find((client) => client.id === id); }
 function waitPhase(clients, phase, predicate = () => true) { return until(() => { const state = sharedState(clients); return state?.phase === phase && predicate(state) ? state : null; }, `phase ${phase}`); }
+function internalRoom(match) { return [...match.service.rooms.values()][0]; }
+function hunterSocket(match) { return socketForId(match.clients, internalRoom(match).hunterId); }
 
 async function testTimerWin() {
   const match = await makeMatch({ hideMs: 150, huntMs: 280, intermissionMs: 50 });
@@ -45,18 +47,18 @@ async function testTimerWin() {
 async function testStrikesOut() {
   const match = await makeMatch({ hideMs: 700, huntMs: 8000, intermissionMs: 50 });
   try {
-    let state = await waitPhase(match.clients, 'hide');
-    const hunter = socketForId(match.clients, state.hunterId);
-    for (const player of state.players.filter((item) => item.role === 'hider')) {
+    await waitPhase(match.clients, 'hide');
+    const room = internalRoom(match); const hunter = hunterSocket(match);
+    for (const player of [...room.players.values()].filter((item) => item.role === 'hider')) {
       const client = socketForId(match.clients, player.id); const dir = client.playerName === 'Moss' ? 1 : -1;
       client.emit('player:input', { x: dir, z: 0, aim: { x: 0, z: 1 } });
     }
-    state = await waitPhase(match.clients, 'hunt');
-    for (const player of state.players.filter((item) => item.role === 'hider')) socketForId(match.clients, player.id).emit('player:input', { x: 0, z: 0 });
+    await waitPhase(match.clients, 'hunt');
+    for (const player of [...room.players.values()].filter((item) => item.role === 'hider')) socketForId(match.clients, player.id).emit('player:input', { x: 0, z: 0 });
     await wait(KNIFE_COOLDOWN_MS + 80);
     for (let strike = 0; strike < HUNTER_TOTAL_STRIKES; strike += 1) {
-      state = sharedState(match.clients); hunter.emit('game:strike', { aim: { x: 0, z: 1 } });
-      await until(() => sharedState(match.clients)?.strikes === state.strikes - 1, `strike ${strike + 1}`);
+      const before = room.strikes; hunter.emit('game:strike', { aim: { x: 0, z: 1 } });
+      await until(() => room.strikes === before - 1, `strike ${strike + 1}`);
       if (strike < HUNTER_TOTAL_STRIKES - 1) await wait(KNIFE_COOLDOWN_MS + 40);
     }
     const result = await waitPhase(match.clients, 'scoreboard'); assert.equal(result.winner, 'hiders'); assert.equal(result.strikes, 0); console.log('PASS: three wasted strikes award the hiders');
@@ -66,22 +68,22 @@ async function testStrikesOut() {
 async function testDisguiseLock() {
   const match = await makeMatch({ hideMs: 5000, huntMs: 8000, intermissionMs: 50 });
   try {
-    const state = await waitPhase(match.clients, 'hide');
-    const hiderState = state.players.find((player) => player.role === 'hider');
+    await waitPhase(match.clients, 'hide');
+    const room = internalRoom(match);
+    const hiderState = [...room.players.values()].find((player) => player.role === 'hider');
     const hider = socketForId(match.clients, hiderState.id);
     let error;
     hider.once('room:error', (value) => { error = value; });
     hider.emit('disguise:select', { type: 'stump' });
-    await until(() => sharedState(match.clients)?.players.find((player) => player.id === hider.id)?.disguise === 'stump', 'disguise selection');
+    await until(() => room.players.get(hider.id)?.disguise === 'stump', 'disguise selection');
     hider.emit('disguise:lock');
     await until(() => error, 'cluster validation error');
     assert.equal(error.code, 'CLUSTER');
     const cluster = DECOY_ENTITIES.find((decoy) => DECOY_ENTITIES.filter((other) => other.type === decoy.type && Math.hypot(other.x - decoy.x, other.z - decoy.z) <= 3).length >= 2);
-    const room = [...match.service.rooms.values()][0];
     Object.assign(room.players.get(hider.id), { x: cluster.x, z: cluster.z });
     hider.emit('disguise:select', { type: cluster.type });
     hider.emit('disguise:lock');
-    const locked = await until(() => { const player = sharedState(match.clients)?.players.find((item) => item.id === hider.id); return player?.locked ? player : null; }, 'valid disguise lock');
+    const locked = await until(() => { const player = room.players.get(hider.id); return player?.locked ? player : null; }, 'valid disguise lock');
     const nearest = DECOY_ENTITIES.filter((item) => item.type === cluster.type && Math.hypot(item.x - cluster.x, item.z - cluster.z) <= 3).sort((a, b) => Math.hypot(a.x - cluster.x, a.z - cluster.z) - Math.hypot(b.x - cluster.x, b.z - cluster.z))[0];
     assert.equal(locked.disguiseScale, nearest.scale);
     console.log('PASS: disguise locks require a matching two-prop cluster and copy the decoy scale');
@@ -100,18 +102,19 @@ async function testSoloBots() {
     socket.emit('debug:addBots', { count: 2 });
     await until(() => state?.players.length === 3 && state.players.filter((player) => player.isBot).length === 2, 'debug bots');
     socket.emit('lobby:ready'); socket.emit('lobby:start');
-    const game = await until(() => state?.phase === 'hide' ? state : null, 'solo bot match');
-    assert.equal(game.players.length, 3); console.log('PASS: ?bots=2 creates two ready AI players for solo testing');
+    await until(() => state?.phase === 'hide', 'solo bot match');
+    assert.equal([...service.rooms.values()][0].players.size, 3); console.log('PASS: ?bots=2 creates two ready AI players for solo testing');
   } finally { socket.disconnect(); service.close(); await new Promise((resolve) => ioServer.close(resolve)); }
 }
 
 async function catchAllHiders(match) {
-  let state = await waitPhase(match.clients, 'hunt'); const hunter = socketForId(match.clients, state.hunterId);
-  while (state.phase === 'hunt' && state.players.some((player) => player.role === 'hider' && player.alive)) {
-    const beforeCaught = state.players.filter((player) => player.role === 'hider' && player.alive).length;
+  await waitPhase(match.clients, 'hunt'); const hunter = hunterSocket(match); const room = internalRoom(match);
+  for (const hider of room.players.values()) if (hider.role === 'hider') { hider.x = room.players.get(room.hunterId).x; hider.z = room.players.get(room.hunterId).z; }
+  while (room.phase === 'hunt' && [...room.players.values()].some((player) => player.role === 'hider' && player.alive)) {
+    const beforeCaught = [...room.players.values()].filter((player) => player.role === 'hider' && player.alive).length;
     hunter.emit('game:strike', { aim: { x: 0, z: 1 } });
-    state = await until(() => { const current = sharedState(match.clients); return current && (current.players.filter((player) => player.role === 'hider' && player.alive).length < beforeCaught || current.phase === 'scoreboard') ? current : null; }, 'catch');
-    if (state.phase !== 'scoreboard') await wait(KNIFE_COOLDOWN_MS + 30);
+    await until(() => [...room.players.values()].filter((player) => player.role === 'hider' && player.alive).length < beforeCaught || room.phase === 'scoreboard', 'catch');
+    if (room.phase !== 'scoreboard') await wait(KNIFE_COOLDOWN_MS + 30);
   }
   return waitPhase(match.clients, 'scoreboard');
 }
@@ -121,8 +124,8 @@ async function testAllCaughtAndRotation() {
   try {
     const hunters = [];
     for (let round = 0; round < 3; round += 1) {
-      const state = await waitPhase(match.clients, 'hide', (room) => room.round === round + 1);
-      hunters.push(state.hunterId);
+      const state = await waitPhase(match.clients, 'hide', (candidate) => candidate.round === round + 1);
+      hunters.push(internalRoom(match).hunterId);
       await waitPhase(match.clients, 'hunt', (room) => room.round === round + 1);
       const result = await catchAllHiders(match);
       assert.equal(result.winner, 'hunter');
