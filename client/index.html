@@ -11,14 +11,14 @@
     <video id="lobby-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" src="/media/lobby.mp4"></video>
     <div id="lobby-fallback" aria-hidden="true"></div>
     <section id="loading" class="loading" role="status" aria-live="polite">
-      <b>Preparing the forest</b>
-      <progress id="loading-progress" max="100" value="4" aria-label="Loading models"></progress>
+      <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Loading forest models" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4"><span id="loading-progress-fill"></span></div>
       <small><span id="loading-percent">4%</span> · <span id="loading-status">Loading forest models</span></small>
     </section>
     <section id="landing-screen" class="front-screen">
       <form id="landing-card" class="front-card">
         <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
         <button id="create-room" type="button">Create Room</button>
+        <div class="or-divider"><span>or</span></div>
         <div class="join-row"><input id="room-code-input" maxlength="4" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code" /><button id="join-room" type="button">Join</button></div>
         <p id="lobby-error" role="alert" aria-live="polite"></p>
       </form>

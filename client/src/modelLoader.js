@@ -10,6 +10,8 @@ const INSTANCE_VIEW_DISTANCE = 48;
 const INSTANCE_VIEW_DISTANCE_SQ = INSTANCE_VIEW_DISTANCE * INSTANCE_VIEW_DISTANCE;
 let modelProgressHandler = null;
 const modelProgress = new Map();
+const loadedModels = new Set();
+const failedModels = new Set();
 
 function reportModelProgress(fileName) {
   if (!modelProgressHandler) return;
@@ -22,6 +24,10 @@ function reportModelProgress(fileName) {
 export function setModelLoadProgressHandler(handler) {
   modelProgressHandler = handler;
   if (handler) reportModelProgress('Preparing models');
+}
+
+export function getModelLoadStats() {
+  return { requested: modelProgress.size, loaded: loadedModels.size, failed: failedModels.size, pending: modelProgress.size - loadedModels.size - failedModels.size };
 }
 
 function trackForDistanceCulling(instances, matrices) {
@@ -60,8 +66,8 @@ export async function loadModel(fileName) {
     modelProgress.set(fileName, 0); reportModelProgress(fileName);
     const request = gltfLoader.loadAsync(url, (event) => {
       if (event.lengthComputable && event.total > 0) { modelProgress.set(fileName, Math.min(0.95, event.loaded / event.total)); reportModelProgress(fileName); }
-    }).then((gltf) => { modelProgress.set(fileName, 1); reportModelProgress(fileName); return gltf; })
-      .catch((error) => { modelProgress.set(fileName, 1); reportModelProgress(fileName); throw error; });
+    }).then((gltf) => { modelProgress.set(fileName, 1); loadedModels.add(fileName); reportModelProgress(fileName); return gltf; })
+      .catch((error) => { modelProgress.set(fileName, 1); failedModels.add(fileName); reportModelProgress(fileName); throw error; });
     modelCache.set(fileName, request);
   }
   return modelCache.get(fileName);

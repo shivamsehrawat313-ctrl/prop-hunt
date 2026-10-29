@@ -12,6 +12,7 @@
     "test:vision": "node tools/test-vision.js",
     "test:audio": "node tools/test-audio.js",
     "test:mobile": "node tools/test-mobile-layout.js",
+    "test:production-css": "node tools/test-production-css.js",
     "test": "npm run test:multiplayer && npm run test:vision && npm run test:audio && npm run test:mobile"
   },
   "dependencies": {

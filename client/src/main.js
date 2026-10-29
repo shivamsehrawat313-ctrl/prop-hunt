@@ -49,7 +49,7 @@ import {
 } from '../../shared/constants.js';
 import './style.css';
 import { MultiplayerClient } from './multiplayer.js';
-import { loadModel, setModelLoadProgressHandler } from './modelLoader.js';
+import { getModelLoadStats, loadModel, setModelLoadProgressHandler } from './modelLoader.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
 import { bridgeAt, distanceToRiverBank, waterDepth } from '../../shared/water.js';
 import { GameAudio } from './audio.js';
@@ -59,6 +59,7 @@ const visionCanvas = document.querySelector('#vision-fog');
 const visionContext = visionCanvas.getContext('2d');
 const loading = document.querySelector('#loading');
 const loadingProgress = document.querySelector('#loading-progress');
+const loadingProgressFill = document.querySelector('#loading-progress-fill');
 const loadingPercent = document.querySelector('#loading-percent');
 const loadingStatus = document.querySelector('#loading-status');
 const toast = document.querySelector('#toast');
@@ -104,9 +105,20 @@ let lastCountdownSecond = -1;
 const impactParticles = [];
 const pistolTracers = [];
 setModelLoadProgressHandler(({ percent, fileName }) => {
-  loadingProgress.value = percent; loadingPercent.textContent = `${percent}%`;
+  loadingProgress.setAttribute('aria-valuenow', String(percent));
+  loadingProgressFill.style.width = `${percent}%`;
+  loadingPercent.textContent = `${percent}%`;
   loadingStatus.textContent = fileName ? `Loading ${fileName.split('/').at(-1)}` : 'Loading forest models';
 });
+const createRoomButton = document.querySelector('#create-room');
+const joinRoomButton = document.querySelector('#join-room');
+function setLandingReady(ready) {
+  createRoomButton.disabled = !ready;
+  joinRoomButton.disabled = !ready;
+  createRoomButton.textContent = ready ? 'Create Room' : 'Loading...';
+  joinRoomButton.textContent = ready ? 'Join' : 'Loading...';
+}
+setLandingReady(false);
 const playerViews = new Map();
 const disguiseModels = { stump: 'stump_squareDetailed.glb', boulder: 'rock_smallTopB.glb', bush: 'plant_bushDetailed.glb' };
 const disguiseTints = { stump: '#648177', boulder: '#718b89', bush: '#64836f' };
@@ -367,7 +379,13 @@ async function prepareScene() {
         miniMap.draw({ x, y: z });
       };
     }
-    loadingProgress.value = 100; loadingPercent.textContent = '100%'; loadingStatus.textContent = 'Forest ready';
+    const modelStats = getModelLoadStats();
+    loadingProgress.setAttribute('aria-valuenow', '100');
+    loadingProgressFill.style.width = '100%';
+    loadingPercent.textContent = '100%';
+    loadingStatus.textContent = modelStats.failed ? `${modelStats.loaded} models loaded, ${modelStats.failed} failed` : `${modelStats.loaded} models loaded`;
+    console.info(`Shadow Hunt: ${modelStats.loaded} models loaded (${modelStats.requested} requested${modelStats.failed ? `, ${modelStats.failed} failed` : ''}).`);
+    setLandingReady(true);
     setTimeout(() => loading.classList.add('hidden'), AUDIO_LOADING_STAGE_COMPLETE_MS);
     showToast('Milestone 1C - cabin yard, camps and forest life ready');
   } catch (error) {

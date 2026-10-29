@@ -39,6 +39,7 @@ npm run build
 
 The multiplayer test starts a local server and connects headless Socket.IO players to exercise round timers, strikes, disguises, solo bots, catches, and hunter rotation.
 `npm test` also checks vision privacy, audio unlock and synthesis, and mobile control layout at 390x844 and 844x390.
+To verify the production stylesheet, run `npm run build`, start `npm start`, then run `npm run test:production-css -- http://localhost:3000` in another terminal.
 
 ## Deploy to Render
 

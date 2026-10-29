@@ -13,6 +13,7 @@
 html, body, #game-shell { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #102c2a; }
 html, body { overscroll-behavior: none; touch-action: none; }
 body { user-select: none; -webkit-user-select: none; }
+body { position: relative; isolation: isolate; }
 #game-shell { position: relative; isolation: isolate; }
 #scene { display: block; width: 100%; height: 100%; outline: none; }
 #vision-fog { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -49,30 +50,36 @@ button { font: inherit; cursor: pointer; }
 .audio-button { display: block; width: 100%; margin-top: 8px; color: #d8fff2; border-color: rgba(85, 217, 188, .27); }
 .audio-button.unlocked { color: #86e2c9; }
 
-.loading { position: fixed; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #e5fff1; background: rgba(6, 24, 25, .72); transition: opacity .5s ease, visibility .5s ease; }
-.loading progress { width: min(260px, 70vw); height: 8px; appearance: none; border: 1px solid rgba(169, 247, 223, .28); border-radius: 6px; overflow: hidden; background: rgba(4, 18, 19, .75); }
-.loading progress::-webkit-progress-bar { background: rgba(4, 18, 19, .75); }
-.loading progress::-webkit-progress-value { background: linear-gradient(90deg, #278f83, #a9f7df); border-radius: 6px; }
+.loading { position: fixed; inset: auto 0 max(24px, env(safe-area-inset-bottom)); z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #e5fff1; background: transparent; transition: opacity .5s ease, visibility .5s ease; }
+.loading-track { width: min(300px, calc(100vw - 48px)); height: 7px; overflow: hidden; border: 1px solid rgba(169, 247, 223, .35); border-radius: 999px; background: rgba(4, 18, 19, .82); box-shadow: 0 3px 18px rgba(0, 0, 0, .35); }
+.loading-track > span { display: block; width: 4%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #278f83, #56dfca); box-shadow: 0 0 10px rgba(66, 211, 193, .48); transition: width .18s ease-out; }
 .loading small { color: #9acfc0; font: 10px 'DM Mono', monospace; }
 .loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-.loading b { font-size: 15px; letter-spacing: .06em; }
-.loading small { color: #9acfc0; font: 10px 'DM Mono', monospace; }
-.loading-mark { color: #72f4d9; font-size: 32px; animation: pulse 1.5s ease-in-out infinite; }
 .loading.error { background: rgba(24, 35, 34, .97); }
 .toast { position: absolute; z-index: 4; left: 50%; bottom: 88px; transform: translate(-50%, 10px); padding: 9px 14px; color: #e4fff4; background: rgba(11, 36, 34, .83); border: 1px solid rgba(148, 229, 205, .18); border-radius: 20px; font: 10px 'DM Mono', monospace; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
-#lobby-video, #lobby-fallback { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; background: linear-gradient(145deg, #102c2a, #071a1c); }
+#lobby-video { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; object-fit: cover; background: linear-gradient(145deg, #102c2a, #071a1c); }
+#lobby-fallback { position: fixed; inset: 0; z-index: -2; width: 100vw; height: 100vh; background: linear-gradient(145deg, #102c2a, #071a1c); }
+body::after { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: rgba(3, 21, 22, .45); }
 #lobby-video { filter: brightness(.37) saturate(.76); }
-#lobby-fallback { z-index: -1; }
 .lobby-video-failed #lobby-video { display:none; }
-.lobby-video-failed #lobby-fallback { z-index:0; }
+.lobby-video-failed #lobby-fallback { z-index:-1; }
 #game-shell { z-index:1; }
 .front-screen { position: fixed; z-index: 8; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(4, 18, 19, .28); color: #ecfff6; }
 .front-screen[hidden], [hidden] { display: none !important; }
 .front-card { width: min(100%, 360px); display: flex; flex-direction: column; gap: 12px; padding: 24px; background: rgba(8, 28, 29, .88); border: 1px solid rgba(170, 238, 220, .2); border-radius: 14px; box-shadow: 0 18px 60px rgba(0,0,0,.28); }
+.landing-card { width: min(100%, 380px); gap: 12px; padding: 26px; border-radius: 16px; background: rgba(8, 30, 31, .78); border-color: rgba(177, 244, 222, .24); box-shadow: 0 22px 72px rgba(0, 8, 10, .42); backdrop-filter: blur(16px); font-family: 'Manrope', 'Segoe UI', sans-serif; }
 .front-card input, .front-card button, .game-actions button, .game-actions select { min-height: 44px; border-radius: 7px; border: 1px solid rgba(167, 231, 212, .23); background: rgba(17, 51, 49, .93); color: #ecfff6; padding: 10px 12px; font: 14px 'Segoe UI', sans-serif; }
+.landing-card input { width: 100%; border-radius: 9px; background: rgba(3, 18, 20, .78); color: #ecfff6; font: 14px 'Manrope', 'Segoe UI', sans-serif; outline: none; }
+.landing-card input:focus { border-color: rgba(66, 211, 193, .82); box-shadow: 0 0 0 3px rgba(66, 211, 193, .15); }
 .front-card input { background: rgba(2, 17, 19, .7); }
 .front-card button, .game-actions button { background: #176b61; border-color: #318d7e; font-weight: 700; }
+.landing-card #create-room { background: linear-gradient(135deg, #32cbb9, #1ea993); border-color: #63ead2; color: #062523; font: 800 14px 'Manrope', 'Segoe UI', sans-serif; box-shadow: 0 8px 22px rgba(25, 190, 164, .2); }
+.landing-card button:disabled { opacity: .62; cursor: wait; }
+.or-divider { display: flex; align-items: center; gap: 11px; color: #8db9ad; font: 10px 'DM Mono', monospace; letter-spacing: .16em; text-transform: uppercase; }
+.or-divider::before, .or-divider::after { content: ''; height: 1px; flex: 1; background: rgba(170, 238, 220, .18); }
+.landing-card .join-row { align-items: center; }
+.landing-card .join-row button { min-width: 84px; border-radius: 9px; background: #1d786d; font-family: 'Manrope', 'Segoe UI', sans-serif; }
 .front-card button:disabled { opacity: .42; }
 .join-row, .copy-row, .lobby-actions { display: flex; gap: 9px; }
 .join-row input { min-width: 0; flex: 1; text-transform: uppercase; letter-spacing: .14em; }

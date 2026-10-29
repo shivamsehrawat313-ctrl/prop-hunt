@@ -456,3 +456,10 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Tests: `npm test` passed multiplayer, vision, audio, and mobile layout suites. The mobile script checked the requested 390x844 portrait and 844x390 landscape footprints. `npm run build` passed with Vite's large-chunk advisory.
 - Rough: viewport verification is a scripted responsive footprint check rather than a physical-device visual run; browser art tuning remains limited. No map data or approved world layout was changed during Phases A–E.
 - Final commands: `npm install`; `npm run dev` for local development; `npm run build` then `npm start` for production; `npm test` for verification. Render uses `npm ci && npm run build`, `npm start`, and `/health`.
+
+## Landing page styling repair
+
+- Confirmed `client/src/main.js` imports `./style.css`. Production `npm start` serves `dist/client`, so source style changes must be followed by `npm run build`; the old generated hashed CSS can otherwise leave a stale unstyled page. A fresh production build now serves the linked stylesheet with HTTP 200.
+- Restyled the full-screen lobby video/overlay, centered landing form, and custom bottom loading meter. Create/Join remain disabled as “Loading...” until initialization completes, while the name field stays editable.
+- Browser smoke run reached 100% and reported 56 unique models loaded (56 requested, 0 failed). Production CSS script passed against `/assets/index-BLlRYM3n.css` with HTTP 200.
+- Verification: `npm test`, `npm run build`, and `npm run test:production-css -- http://localhost:3112` passed.
