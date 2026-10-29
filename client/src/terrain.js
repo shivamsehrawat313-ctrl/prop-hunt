@@ -7,6 +7,7 @@ import {
   GROUND_PATCH_NOISE_LARGE_WEIGHT,
   GROUND_PATCH_NOISE_SCALE_LARGE,
   GROUND_PATCH_NOISE_SCALE_SMALL,
+  MAP_SCALE,
 } from '../../shared/constants.js';
 
 function hash(ix, iz) {
@@ -34,35 +35,36 @@ function flattenWeight(x, z, map, pathLines) {
   let weight = 0;
   for (const line of pathLines) for (let i = 1; i < line.length; i += 1) {
     const distance = segmentDistance(x, z, line[i - 1], line[i]);
-    weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(distance, map.paths.width * 0.5 + 0.25, map.paths.width * 0.5 + 2.0));
+    weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(distance, map.paths.width * 0.5 + 0.25, map.paths.width * 0.5 + 5.0));
   }
   // Preserve the river elevation and its visual continuation into boundary fog.
   const riverLine = map.river.centerline.map(([rx, rz]) => ({ x: rx, y: rz }));
   const first = riverLine[0]; const firstNext = riverLine[1];
   const last = riverLine.at(-1); const lastPrevious = riverLine.at(-2);
-  const head = { x: first.x + (first.x - firstNext.x) / Math.hypot(first.x - firstNext.x, first.y - firstNext.y) * 42, y: first.y + (first.y - firstNext.y) / Math.hypot(first.x - firstNext.x, first.y - firstNext.y) * 42 };
-  const tail = { x: last.x + (last.x - lastPrevious.x) / Math.hypot(last.x - lastPrevious.x, last.y - lastPrevious.y) * 42, y: last.y + (last.y - lastPrevious.y) / Math.hypot(last.x - lastPrevious.x, last.y - lastPrevious.y) * 42 };
+  const riverExtension = 42 * MAP_SCALE;
+  const head = { x: first.x + (first.x - firstNext.x) / Math.hypot(first.x - firstNext.x, first.y - firstNext.y) * riverExtension, y: first.y + (first.y - firstNext.y) / Math.hypot(first.x - firstNext.x, first.y - firstNext.y) * riverExtension };
+  const tail = { x: last.x + (last.x - lastPrevious.x) / Math.hypot(last.x - lastPrevious.x, last.y - lastPrevious.y) * riverExtension, y: last.y + (last.y - lastPrevious.y) / Math.hypot(last.x - lastPrevious.x, last.y - lastPrevious.y) * riverExtension };
   riverLine.unshift(head); riverLine.push(tail);
   for (let i = 1; i < riverLine.length; i += 1) {
     const a = riverLine[i - 1];
     const b = riverLine[i];
     const riverWidth = Math.max(...map.river.widthKeys.map((entry) => entry[1])) * (map.river.bankScale ?? 1.72) * 0.5;
     const distance = segmentDistance(x, z, a, b);
-    weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(distance, riverWidth, riverWidth + 3));
+    weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(distance, riverWidth, riverWidth + 5));
   }
   // Keep the three-building village yard and the small tent/camp clearings level for Milestone 1C.
   for (const [cx, cz, radius, blend] of [
-    [207, 92, 14, 18], [14, 20, 4.5, 8], [71, 105, 4.5, 8], [15, 108, 4.5, 8],
-    [101, 103, 4.5, 8], [147, 21, 4.5, 8], [224, 15, 5.5, 9],
+    [207 * MAP_SCALE, 92 * MAP_SCALE + 4, 13, 16], [14 * MAP_SCALE, 20 * MAP_SCALE, 4.5, 7], [71 * MAP_SCALE, 105 * MAP_SCALE, 4.5, 7], [15 * MAP_SCALE, 108 * MAP_SCALE, 4.5, 7],
+    [101 * MAP_SCALE, 103 * MAP_SCALE, 4.5, 7], [147 * MAP_SCALE, 21 * MAP_SCALE, 4.5, 7], [224 * MAP_SCALE, 15 * MAP_SCALE, 5.5, 8],
   ]) {
     const d = Math.hypot(x - cx, z - cz);
     weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(d, radius, blend));
   }
-  for (const cx of [170, 184]) for (const cz of [96, 108]) {
-    const fieldDistance = Math.hypot((x - cx) / 7.5, (z - cz) / 6.0);
+  for (const cx of [96.875, 103.675]) for (const cz of [56, 63.5]) {
+    const fieldDistance = Math.hypot((x - cx) / 3.9, (z - cz) / 2.9);
     weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(fieldDistance, 0.82, 1.25));
   }
-  const marshFieldDistance = Math.hypot((x - 144.25) / 4.8, (z - 98) / 4.0);
+  const marshFieldDistance = Math.hypot((x - 144.25 * MAP_SCALE) / 3.4, (z - 98 * MAP_SCALE) / 2.6);
   weight = Math.max(weight, 1 - THREE.MathUtils.smoothstep(marshFieldDistance, 0.82, 1.25));
   return weight;
 }
@@ -75,6 +77,7 @@ function zoneForX(x, map) {
 }
 
 function patchNoise(x, z) {
+  x /= MAP_SCALE; z /= MAP_SCALE;
   const large = valueNoise(x * GROUND_PATCH_NOISE_SCALE_LARGE + 93, z * GROUND_PATCH_NOISE_SCALE_LARGE - 27);
   const small = valueNoise(x * GROUND_PATCH_NOISE_SCALE_SMALL - 44, z * GROUND_PATCH_NOISE_SCALE_SMALL + 81);
   return large * GROUND_PATCH_NOISE_LARGE_WEIGHT + small * (1 - GROUND_PATCH_NOISE_LARGE_WEIGHT);
@@ -152,19 +155,19 @@ export function terrainHeightAt(x, z, map, pathLines = null) {
   pathLines ||= pathCache.get(map) || getPathPolylines(map);
   if (!pathCache.has(map)) pathCache.set(map, pathLines);
   const zoneC = THREE.MathUtils.smoothstep(x, map.zones[2].minX + 4, map.zones[2].minX + 35);
-  const broad = valueNoise(x * 0.022, z * 0.022) * 0.30;
-  const detail = valueNoise(x * 0.065 + 17, z * 0.065 - 9) * 0.20;
+  const broad = valueNoise(x / MAP_SCALE * 0.022, z / MAP_SCALE * 0.022) * 0.30;
+  const detail = valueNoise(x / MAP_SCALE * 0.065 + 17, z / MAP_SCALE * 0.065 - 9) * 0.20;
   const undulation = (broad + detail) * (1 - zoneC * 0.82);
   return undulation * (1 - flattenWeight(x, z, map, pathLines));
 }
 
 export function createTerrain(map) {
   const { minX, minY, maxX, maxY } = map.bounds;
-  const visualPadding = 64;
+  const visualPadding = 64 * MAP_SCALE;
   const visualMinX = minX - visualPadding; const visualMinZ = minY - visualPadding;
   const visualMaxX = maxX + visualPadding; const visualMaxZ = maxY + visualPadding;
-  const divisionsX = Math.ceil((visualMaxX - visualMinX) / 1.4);
-  const divisionsZ = Math.ceil((visualMaxZ - visualMinZ) / 1.4);
+  const divisionsX = Math.ceil((visualMaxX - visualMinX) / (1.4 * MAP_SCALE));
+  const divisionsZ = Math.ceil((visualMaxZ - visualMinZ) / (1.4 * MAP_SCALE));
   const pathLines = getPathPolylines(map);
   const patchCoverage = measureGroundPatchCoverage(map);
   if (import.meta.env.DEV) console.info('[terrain-report] top-down ground coverage (%)', patchCoverage);
@@ -178,8 +181,8 @@ export function createTerrain(map) {
       positions.push(x, height, z);
       const color = groundColorAt(x, z, map);
       const edgeDistance = Math.min(x - visualMinX, visualMaxX - x, z - visualMinZ, visualMaxZ - z);
-      const edgeFade = 1 - THREE.MathUtils.smoothstep(edgeDistance, 0, 28);
-      color.lerp(edgeColor, edgeFade);
+      const edgeFade = 1 - THREE.MathUtils.smoothstep(edgeDistance, 0, 28 * MAP_SCALE);
+      color.lerp(edgeColor, Math.max(edgeFade, 1 - THREE.MathUtils.smoothstep(edgeDistance, 4 * MAP_SCALE, 18 * MAP_SCALE)));
       colors.push(color.r, color.g, color.b);
       if (ix < divisionsX && iz < divisionsZ) {
         const a = iz * (divisionsX + 1) + ix; const b = a + 1; const c = a + divisionsX + 1; const d = c + 1;

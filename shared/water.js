@@ -1,4 +1,4 @@
-import forest from '../maps/forest.json' with { type: 'json' };
+import forest from './map.js';
 
 export const LAND_MOVE_SPEED = 7.2;
 export const SHALLOW_WATER_SPEED_FACTOR = 0.65;

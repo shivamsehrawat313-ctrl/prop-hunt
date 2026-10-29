@@ -3,6 +3,9 @@ import { addInstancedModel, addUntintedInstancedModel, loadModel } from './model
 import { terrainHeightAt } from './terrain.js';
 import { getPathPolylines } from './paths.js';
 import { distanceToRiverBank, isInWater } from '../../shared/water.js';
+import { MAP_SCALE } from '../../shared/constants.js';
+
+const s = (value) => value * MAP_SCALE;
 
 const CAMPS = [
   { id: 'A-hidden-1', zone: 'A', x: 14, z: 20, tents: 2 },
@@ -11,34 +14,36 @@ const CAMPS = [
   { id: 'B-hidden-1', zone: 'B', x: 101, z: 103, tents: 2 },
   { id: 'B-hidden-2', zone: 'B', x: 147, z: 21, tents: 1 },
   { id: 'C-clearing', zone: 'C', x: 224, z: 15, tents: 3 },
-];
+].map((camp) => ({ ...camp, x: s(camp.x), z: s(camp.z) }));
 const BOATS = [
   { zone: 'A', x: 55, z: 102, yaw: 0.45 }, { zone: 'A', x: 61, z: 113, yaw: -0.55 },
-  { zone: 'B', x: 90, z: 16, yaw: -0.4 }, { zone: 'B', x: 111, z: 39, yaw: 0.6 },
+  { zone: 'B', x: 90, z: 16, yaw: -0.4 },
   { zone: 'B', x: 127, z: 91, yaw: -0.5 }, { zone: 'B', x: 143, z: 93, yaw: 0.75 },
   { zone: 'C', x: 170, z: 79, yaw: -0.65 }, { zone: 'C', x: 179, z: 44, yaw: 0.35 },
-];
-const VILLAGE = { x: 207, z: 92 };
+].map((boat) => ({ ...boat, x: s(boat.x), z: s(boat.z) }));
+// The houses stay full size. Their old 9-unit gaps compress below their 7-unit
+// footprints, so the yard is repacked with 8-unit centers and a tighter fence.
+const VILLAGE = { x: s(207), z: s(92) + 4 };
 const VILLAGE_BUILDINGS = [
-  { id: 'main-house', file: 'building-sample-house-c.glb', preview: 'building-sample-house-c.png', x: 207, z: 92, yaw: 0 },
-  { id: 'west-house', file: 'building-sample-house-a.glb', preview: 'building-sample-house-a.png', x: 198, z: 92, yaw: 0.08 },
-  { id: 'east-house', file: 'building-sample-house-b.glb', preview: 'building-sample-house-b.png', x: 216, z: 92, yaw: -0.08 },
+  { id: 'main-house', file: 'building-sample-house-c.glb', preview: 'building-sample-house-c.png', x: VILLAGE.x, z: VILLAGE.z, yaw: 0 },
+  { id: 'west-house', file: 'building-sample-house-a.glb', preview: 'building-sample-house-a.png', x: VILLAGE.x - 8, z: VILLAGE.z, yaw: 0.08 },
+  { id: 'east-house', file: 'building-sample-house-b.glb', preview: 'building-sample-house-b.png', x: VILLAGE.x + 8, z: VILLAGE.z, yaw: -0.08 },
 ];
 const VILLAGE_WIDTH = 7;
-const YARD = { x: 207, z: 92, width: 28, depth: 18 };
+const YARD = { x: VILLAGE.x, z: VILLAGE.z, width: 24, depth: 14 };
 const CABIN_MODEL_DIR = '/cabin%20models/';
 const cabinModelPath = (file) => `${CABIN_MODEL_DIR}${file}`;
 const CROPS = [
-  { id: 'C-wheat', x: 170, z: 96, count: 144 }, { id: 'C-corn', x: 184, z: 96, count: 144 },
-  { id: 'C-leaves', x: 170, z: 108, count: 144 }, { id: 'C-bamboo', x: 184, z: 108, count: 144 },
-  { id: 'B-river-small', x: 141, z: 98, count: 48 },
+  { id: 'C-wheat', x: 96.875, z: 56, count: 144 }, { id: 'C-corn', x: 103.675, z: 56, count: 144 },
+  { id: 'C-leaves', x: 96.875, z: 63.5, count: 144 }, { id: 'C-bamboo', x: 103.675, z: 63.5, count: 144 },
+  { id: 'B-river-small', x: 88, z: 58, count: 48 },
 ];
 
 export function getMilestone1CClearings() {
   return [
-    ...CAMPS.map(({ x, z, id }) => ({ x, z, radius: id === 'C-clearing' ? 8.8 : 6.3 })),
-    { x: VILLAGE.x, z: VILLAGE.z, radius: 16 },
-    ...CROPS.map((field) => ({ x: field.x, z: field.z, radius: field.id.startsWith('B-') ? 6 : 7.5 })),
+    ...CAMPS.map(({ x, z, id }) => ({ x, z, radius: id === 'C-clearing' ? 7.2 : 5.8 })),
+    { x: VILLAGE.x, z: VILLAGE.z, radius: 13.5 },
+    ...CROPS.map((field) => ({ x: field.x, z: field.z, radius: field.id.startsWith('B-') ? 4.5 : 4.2 })),
   ];
 }
 
@@ -105,15 +110,15 @@ function makeCampDirt(scene, map, camps) {
     const disk = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     disk.name = `trampled-dirt-${camp.id}`; disk.rotation.x = -Math.PI / 2;
     disk.position.set(camp.x, terrainHeightAt(camp.x, camp.z, map) + 0.018, camp.z);
-    disk.scale.set(camp.id === 'C-clearing' ? 8 : 5.5, camp.id === 'C-clearing' ? 6.2 : 4.8, 1); scene.add(disk);
+    disk.scale.set(s(camp.id === 'C-clearing' ? 8 : 5.5), s(camp.id === 'C-clearing' ? 6.2 : 4.8), 1); scene.add(disk);
   }
 }
 
 function makeCabinConnector(scene, map) {
   const routes = [
-    [[198, 88.5], [198, 86.4], [200, 84.4], [204.3, 83]],
-    [[207, 88.5], [207, 86.1], [207, 83], [207, 82]],
-    [[216, 88.5], [216, 86.4], [214, 84.4], [209.7, 83]],
+    [[VILLAGE.x - 8, VILLAGE.z - 3.5], [VILLAGE.x - 8, VILLAGE.z - 5.6], [VILLAGE.x - 6, VILLAGE.z - 7.6], [VILLAGE.x - 2.7, VILLAGE.z - 8.4]],
+    [[VILLAGE.x, VILLAGE.z - 3.5], [VILLAGE.x, VILLAGE.z - 5.8], [VILLAGE.x, VILLAGE.z - 7.9], [VILLAGE.x, 82 * MAP_SCALE]],
+    [[VILLAGE.x + 8, VILLAGE.z - 3.5], [VILLAGE.x + 8, VILLAGE.z - 5.6], [VILLAGE.x + 6, VILLAGE.z - 7.6], [VILLAGE.x + 2.7, VILLAGE.z - 8.4]],
   ];
   const material = new THREE.MeshStandardMaterial({ color: '#947858', roughness: 1, side: THREE.DoubleSide, depthTest: true, depthWrite: true });
   routes.forEach((route, routeIndex) => {
@@ -137,7 +142,7 @@ function makeCabinConnector(scene, map) {
 
 function addHollowLogLandmark(scene, map) {
   const group = new THREE.Group(); group.name = 'zone-b-hollow-log-landmark';
-  const x = 116; const z = 102; const groundY = terrainHeightAt(x, z, map);
+  const x = s(116); const z = s(102); const groundY = terrainHeightAt(x, z, map);
   const bark = new THREE.MeshStandardMaterial({ color: '#665241', roughness: 1, flatShading: true });
   const inner = new THREE.MeshStandardMaterial({ color: '#1e302e', roughness: 1, side: THREE.DoubleSide });
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.68, 3.0, 7, 1), bark);
@@ -154,17 +159,17 @@ async function buildCamps(scene, map, lights) {
   const random = seedRandom(map.seed ^ 0x1c1c1c);
   const tentsByColor = { red: [], yellow: [] }; const fires = []; const props = []; const tentCounts = {};
   for (const camp of CAMPS) {
-    const rng = seedRandom((map.seed + camp.x * 31 + camp.z * 17) >>> 0);
+    const rng = seedRandom((map.seed + (camp.x / MAP_SCALE) * 31 + (camp.z / MAP_SCALE) * 17) >>> 0);
     tentCounts[camp.id] = camp.tents;
     for (let i = 0; i < camp.tents; i += 1) {
       const angle = i / camp.tents * Math.PI * 2;
-      const radiusX = camp.id === 'C-clearing' ? 5.5 : 4.2;
-      const radiusZ = camp.id === 'C-clearing' ? 4.8 : 4.0;
+      const radiusX = Math.max(5.0, s(camp.id === 'C-clearing' ? 5.5 : 4.2));
+      const radiusZ = Math.max(5.0, s(camp.id === 'C-clearing' ? 4.8 : 4.0));
       const tent = { x: camp.x + Math.cos(angle) * radiusX, y: camp.z + Math.sin(angle) * radiusZ, height: terrainHeightAt(camp.x + Math.cos(angle) * radiusX, camp.z + Math.sin(angle) * radiusZ, map), rotation: angle + Math.PI, scale: 3 * (camp.id === 'C-clearing' ? 0.85 : 0.72 + rng() * 0.13) };
       tentsByColor[(i + CAMPS.indexOf(camp)) % 2 === 0 ? 'red' : 'yellow'].push(tent);
     }
     fires.push({ x: camp.x, y: camp.z, height: terrainHeightAt(camp.x, camp.z, map) + 0.05, rotation: random() * Math.PI * 2, scale: camp.id === 'C-clearing' ? 0.9 : 0.78 });
-    for (let i = 0; i < 3; i += 1) props.push({ x: camp.x + (random() - 0.5) * 5.6, y: camp.z + (random() - 0.5) * 5.0, height: terrainHeightAt(camp.x, camp.z, map), rotation: random() * Math.PI * 2, scale: 0.5 + random() * 0.3 });
+    for (let i = 0; i < 3; i += 1) props.push({ x: camp.x + (random() - 0.5) * s(5.6), y: camp.z + (random() - 0.5) * s(5.0), height: terrainHeightAt(camp.x, camp.z, map), rotation: random() * Math.PI * 2, scale: 0.5 + random() * 0.3 });
   }
   makeCampDirt(scene, map, CAMPS);
   const builtCampModels = await Promise.all([
@@ -231,9 +236,9 @@ function makeBats(scene, map) {
     bat.userData.phase = i * 1.6; scene.add(bat); bats.push(bat);
   }
   const update = (time) => bats.forEach((bat, i) => {
-    const center = i < 2 ? { x: 121, z: 75 } : { x: 224, z: 99 };
+    const center = i < 2 ? { x: s(121), z: s(75) } : { x: s(224), z: s(99) };
     const phase = time * 0.22 + bat.userData.phase;
-    bat.position.set(center.x + Math.cos(phase) * (i < 2 ? 8 : 5), 3.2 + Math.sin(time * 2.4 + i) * 0.28, center.z + Math.sin(phase) * (i < 2 ? 7 : 4));
+    bat.position.set(center.x + Math.cos(phase) * s(i < 2 ? 8 : 5), 3.2 + Math.sin(time * 2.4 + i) * 0.28, center.z + Math.sin(phase) * s(i < 2 ? 7 : 4));
     bat.rotation.y = -phase; bat.children.slice(1).forEach((wing, j) => { wing.rotation.x = Math.sin(time * 8 + i + j) * 0.55; });
   });
   return { bats, update };
@@ -248,10 +253,12 @@ function createGroundMist(scene, map) {
   });
   const mesh = new THREE.InstancedMesh(geometry, material, 28); mesh.name = 'zone-a-soft-ground-mist'; mesh.frustumCulled = false;
   const random = seedRandom(map.seed ^ 0xb17); const dummy = new THREE.Object3D();
+  const zoneA = map.zones.find((zone) => zone.id === 'A');
   for (let i = 0; i < 28; i += 1) {
-    const x = 5 + random() * 69; const z = 5 + random() * 110;
+    const x = zoneA.minX + 3 + random() * Math.max(1, zoneA.maxX - zoneA.minX - 6);
+    const z = map.bounds.minY + 3 + random() * Math.max(1, map.bounds.maxY - map.bounds.minY - 6);
     dummy.position.set(x, terrainHeightAt(x, z, map) + 0.32 + random() * 0.3, z);
-    dummy.rotation.y = random() * Math.PI; dummy.scale.set(6 + random() * 7, 3 + random() * 3, 1); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+    dummy.rotation.y = random() * Math.PI; dummy.scale.set(s(6 + random() * 7), s(3 + random() * 3), 1); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
   }
   scene.add(mesh);
   return { setQuality(level) { mesh.count = level === 'high' ? 28 : level === 'medium' ? 17 : 9; } };
@@ -265,8 +272,8 @@ function createFireflies(scene, map) {
   for (let i = 0; i < capacity; i += 1) {
     const nearRiver = i < 70; const nearYard = i >= 70 && i < 95; const nearCrop = i >= 95 && i < 120;
     const point = nearRiver ? map.river.centerline[Math.floor(random() * map.river.centerline.length)] : null;
-    const cropX = i % 2 ? 185 : 201; const cropZ = i % 3 ? 96 : 108;
-    flies.push({ x: nearRiver ? point[0] + (random() - 0.5) * 12 : nearYard ? 219 + random() * 12 : nearCrop ? cropX + (random() - 0.5) * 13 : 8 + random() * 145, z: nearRiver ? point[1] + (random() - 0.5) * 12 : nearYard ? 90 + random() * 18 : nearCrop ? cropZ + (random() - 0.5) * 9 : 5 + random() * 110, y: 0.6 + random() * 2.5, phase: random() * 10, speed: 0.18 + random() * 0.3 });
+    const crop = CROPS[i % 4];
+    flies.push({ x: nearRiver ? point[0] + (random() - 0.5) * s(12) : nearYard ? VILLAGE.x + (random() - 0.5) * s(12) : nearCrop ? crop.x + (random() - 0.5) * s(13) : map.bounds.minX + s(8) + random() * (map.bounds.maxX - s(16)), z: nearRiver ? point[1] + (random() - 0.5) * s(12) : nearYard ? VILLAGE.z + (random() - 0.5) * s(18) : nearCrop ? crop.z + (random() - 0.5) * s(9) : map.bounds.minY + s(5) + random() * (map.bounds.maxY - s(10)), y: 0.6 + random() * 2.5, phase: random() * 10, speed: 0.18 + random() * 0.3 });
   }
   const dummy = new THREE.Object3D();
   const update = (time, quality) => {
@@ -274,7 +281,7 @@ function createFireflies(scene, map) {
     const count = Math.floor(capacity * qualityRatio); mesh.count = count;
     for (let i = 0; i < count; i += 1) {
       const fly = flies[i]; const t = time * fly.speed + fly.phase;
-      dummy.position.set(fly.x + Math.sin(t) * 0.65, fly.y + Math.sin(t * 1.3) * 0.55, fly.z + Math.cos(t * 0.8) * 0.65);
+      dummy.position.set(fly.x + Math.sin(t) * s(0.65), fly.y + Math.sin(t * 1.3) * 0.55, fly.z + Math.cos(t * 0.8) * s(0.65));
       const pulse = 0.7 + (Math.sin(t * 2) + 1) * 0.25; dummy.scale.setScalar(pulse); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -286,16 +293,22 @@ async function createGlowFlowers(scene, map) {
   const random = seedRandom(map.seed ^ 0x612);
   const models = ['flower_purpleB.glb', 'flower_purpleC.glb', 'flower_redA.glb', 'flower_redB.glb', 'flower_redC.glb', 'flower_yellowA.glb', 'flower_yellowB.glb'];
   const clusters = [
-    ...[[194, 86], [220, 86], [194, 98], [220, 98], [200, 100], [214, 100], [191, 94], [191, 107], [170, 115], [184, 115], [230, 28], [233, 66]].map(([x, z]) => ({ zone: 'C', x, z, count: 11 })),
-    { zone: 'A', x: 43, z: 32, count: 7 }, { zone: 'A', x: 68, z: 86, count: 7 },
-    { zone: 'B', x: 121, z: 24, count: 7 }, { zone: 'B', x: 150, z: 73, count: 7 },
+    ...[[194, 86], [220, 86], [194, 98], [220, 98], [200, 100], [214, 100], [191, 94], [191, 107], [170, 115], [184, 115], [230, 28], [233, 66]].map(([x, z]) => ({ zone: 'C', x: s(x), z: s(z), count: 11 })),
+    { zone: 'A', x: s(43), z: s(32), count: 7 }, { zone: 'A', x: s(68), z: s(86), count: 7 },
+    { zone: 'B', x: s(121), z: s(24), count: 7 }, { zone: 'B', x: s(150), z: s(73), count: 7 },
   ];
   const placementsByModel = new Map(models.map((model) => [model, []]));
   const counts = { A: 0, B: 0, C: 0 };
   let index = 0;
   for (const cluster of clusters) for (let i = 0; i < cluster.count; i += 1) {
-    const x = cluster.x + (random() - 0.5) * 3.6; const z = cluster.z + (random() - 0.5) * 3.2;
-    if (x < 3 || x > 237 || z < 3 || z > 117 || isInWater(x, z, map)) continue;
+    const sourceX = cluster.x + (random() - 0.5) * s(3.6); const sourceZ = cluster.z + (random() - 0.5) * s(3.2);
+    const valid = (x, z) => x >= map.bounds.minX + 0.5 && x <= map.bounds.maxX - 0.5 && z >= map.bounds.minY + 0.5 && z <= map.bounds.maxY - 0.5 && !isInWater(x, z, map);
+    let { x, z } = valid(sourceX, sourceZ) ? { x: sourceX, z: sourceZ } : {};
+    for (let radius = 0.5; x === undefined && radius <= 8; radius += 0.5) for (let spoke = 0; spoke < 24 && x === undefined; spoke += 1) {
+      const angle = spoke * Math.PI * 2 / 24; const candidateX = sourceX + Math.cos(angle) * radius; const candidateZ = sourceZ + Math.sin(angle) * radius;
+      if (valid(candidateX, candidateZ)) { x = candidateX; z = candidateZ; }
+    }
+    if (x === undefined) continue;
     const model = models[index % models.length]; index += 1;
     placementsByModel.get(model).push({ x, y: z, height: terrainHeightAt(x, z, map) + 0.012, rotation: random() * Math.PI * 2, scale: 2.0 + random() * 0.5 });
     counts[cluster.zone] += 1;
@@ -306,6 +319,8 @@ async function createGlowFlowers(scene, map) {
 
 async function buildCabinYardProps(scene, map) {
   const y = (x, z) => terrainHeightAt(x, z, map);
+  const yardX = (x) => YARD.x + (x - 207) * MAP_SCALE;
+  const yardZ = (z) => YARD.z + (z - 92) * MAP_SCALE;
   const placements = {
     fence: [], gate: [], stone: [], logs: [], stumps: [], buckets: [], boxes: [], benches: [], drying: [],
     fieldFence: [], cart: [],
@@ -314,29 +329,31 @@ async function buildCabinYardProps(scene, map) {
   const fenceAdd = (array, x, z, yaw = 0, scale = 1.4) => array.push({ x, y: z, height: y(x, z), rotation: yaw, scale });
   const fenceWest = YARD.x - YARD.width / 2; const fenceEast = YARD.x + YARD.width / 2;
   const fenceSouth = YARD.z - YARD.depth / 2; const fenceNorth = YARD.z + YARD.depth / 2;
-  // A 28 x 18 ring with a wide south gate facing the main path.
-  for (let x = fenceWest; x <= fenceEast; x += 1.5) {
-    if (x < 204 || x > 210) { fenceAdd(placements.fence, x, fenceSouth, 0, 1.4); fenceColliders.push({ x, z: fenceSouth, radius: 0.28, type: 'fence' }); }
+  // Preserve the fence segment count while fitting the compressed village footprint.
+  const yardXAt = (index) => fenceWest + (fenceEast - fenceWest) * index / 18;
+  const yardZAt = (index) => fenceSouth + s(1.5) + (fenceNorth - fenceSouth - s(3)) * index / 10;
+  for (let i = 0; i < 19; i += 1) {
+    const x = yardXAt(i);
+    if (i < 8 || i > 11) { fenceAdd(placements.fence, x, fenceSouth, 0, 1.4); fenceColliders.push({ x, z: fenceSouth, radius: 0.28, type: 'fence' }); }
     fenceAdd(placements.fence, x, fenceNorth, 0, 1.4);
+    fenceColliders.push({ x, z: fenceNorth, radius: 0.28, type: 'fence' });
   }
-  for (let x = fenceWest; x <= fenceEast; x += 1.5) fenceColliders.push({ x, z: fenceNorth, radius: 0.28, type: 'fence' });
-  for (let z = fenceSouth + 1.5; z <= fenceNorth - 1.5; z += 1.5) { fenceAdd(placements.fence, fenceWest, z, Math.PI / 2, 1.4); fenceAdd(placements.fence, fenceEast, z, Math.PI / 2, 1.4); fenceColliders.push({ x: fenceWest, z, radius: 0.28, type: 'fence' }, { x: fenceEast, z, radius: 0.28, type: 'fence' }); }
-  fenceAdd(placements.gate, 203.6, fenceSouth, 0, 1.2); fenceAdd(placements.gate, 210.4, fenceSouth, 0, 1.2);
+  for (let i = 0; i < 11; i += 1) { const z = yardZAt(i); fenceAdd(placements.fence, fenceWest, z, Math.PI / 2, 1.4); fenceAdd(placements.fence, fenceEast, z, Math.PI / 2, 1.4); fenceColliders.push({ x: fenceWest, z, radius: 0.28, type: 'fence' }, { x: fenceEast, z, radius: 0.28, type: 'fence' }); }
+  fenceAdd(placements.gate, YARD.x - s(3.4), fenceSouth, 0, 1.2); fenceAdd(placements.gate, YARD.x + s(3.4), fenceSouth, 0, 1.2);
   // Low stone edge around the yard, using muted border stones.
-  for (let x = fenceWest; x <= fenceEast; x += 1.5) { if (x < 204 || x > 210) placements.stone.push({ x, y: fenceSouth, height: y(x, fenceSouth), rotation: 0, scale: 0.43 }); placements.stone.push({ x, y: fenceNorth, height: y(x, fenceNorth), rotation: 0, scale: 0.43 }); }
-  for (let z = fenceSouth; z <= fenceNorth; z += 1.5) { placements.stone.push({ x: fenceWest, y: z, height: y(fenceWest, z), rotation: 0, scale: 0.43 }); placements.stone.push({ x: fenceEast, y: z, height: y(fenceEast, z), rotation: 0, scale: 0.43 }); }
-  for (const [x, z, yaw] of [[203, 99, 0.25], [205, 99.5, -0.2], [207, 99, 1.4]]) placements.logs.push({ x, y: z, height: y(x, z), rotation: yaw, scale: 0.8 });
-  for (const [x, z] of [[212, 87], [213.2, 87.2], [214.2, 88]]) placements.stumps.push({ x, y: z, height: y(x, z), rotation: 0.3, scale: 0.95 });
-  placements.buckets.push({ x: 204, y: 99, height: y(204, 99), rotation: 0.3, scale: 0.8 });
-  placements.boxes.push({ x: 211.5, y: 95, height: y(211.5, 95), rotation: 0.4, scale: 0.8 }, { x: 212.1, y: 95.6, height: y(212.1, 95.6) + 0.5, rotation: 0.4, scale: 0.7 });
-  placements.benches.push({ x: 205, y: 98, height: y(205, 98), rotation: Math.PI, scale: 0.85 });
-  placements.drying.push({ x: 212, y: 98, height: y(212, 98), rotation: -0.4, scale: 0.8 });
-  placements.boxes.push({ x: 194.0, y: 102.5, height: y(194.0, 102.5), rotation: 0.25, scale: 0.8 }, { x: 194.7, y: 103.2, height: y(194.7, 103.2) + 0.5, rotation: 0.25, scale: 0.72 });
-  placements.cart.push({ x: 197.0, y: 105.0, height: y(197.0, 105.0) + 0.025, rotation: 0.3, scale: 1 }, { x: 218.0, y: 98.5, height: y(218.0, 98.5) + 0.025, rotation: -0.45, scale: 1 });
+  for (let i = 0; i < 19; i += 1) { const x = yardXAt(i); if (i < 8 || i > 11) placements.stone.push({ x, y: fenceSouth, height: y(x, fenceSouth), rotation: 0, scale: 0.43 }); placements.stone.push({ x, y: fenceNorth, height: y(x, fenceNorth), rotation: 0, scale: 0.43 }); }
+  for (let i = 0; i <= 12; i += 1) { const z = fenceSouth + (fenceNorth - fenceSouth) * i / 12; placements.stone.push({ x: fenceWest, y: z, height: y(fenceWest, z), rotation: 0, scale: 0.43 }); placements.stone.push({ x: fenceEast, y: z, height: y(fenceEast, z), rotation: 0, scale: 0.43 }); }
+  for (const [x, z, yaw] of [[203, 99, 0.25], [205, 99.5, -0.2], [207, 99, 1.4]]) { const px = yardX(x); const pz = yardZ(z); placements.logs.push({ x: px, y: pz, height: y(px, pz), rotation: yaw, scale: 0.8 }); }
+  for (const [x, z] of [[212, 87], [213.2, 87.2], [214.2, 88]]) { const px = yardX(x); const pz = yardZ(z); placements.stumps.push({ x: px, y: pz, height: y(px, pz), rotation: 0.3, scale: 0.95 }); }
+  const bucketX = yardX(204); const bucketZ = yardZ(99); placements.buckets.push({ x: bucketX, y: bucketZ, height: y(bucketX, bucketZ), rotation: 0.3, scale: 0.8 });
+  for (const [x, z, lift, rotation, scale] of [[211.5, 95, 0, 0.4, 0.8], [212.1, 95.6, 0.5, 0.4, 0.7], [194, 102.5, 0, 0.25, 0.8], [194.7, 103.2, 0.5, 0.25, 0.72]]) { const px = yardX(x); const pz = yardZ(z); placements.boxes.push({ x: px, y: pz, height: y(px, pz) + lift, rotation, scale }); }
+  const benchX = yardX(205); const benchZ = yardZ(98); placements.benches.push({ x: benchX, y: benchZ, height: y(benchX, benchZ), rotation: Math.PI, scale: 0.85 });
+  const dryingX = yardX(212); const dryingZ = yardZ(98); placements.drying.push({ x: dryingX, y: dryingZ, height: y(dryingX, dryingZ), rotation: -0.4, scale: 0.8 });
+  placements.cart.push({ x: 108.5, y: 66, height: y(108.5, 66) + 0.025, rotation: 0.3, scale: 1 }, { x: 132, y: 43, height: y(132, 43) + 0.025, rotation: -0.45, scale: 1 });
   for (const field of CROPS) {
-    const halfX = field.id.startsWith('B-') ? 4.2 : 5.7; const halfZ = field.id.startsWith('B-') ? 3.7 : 4.4;
-    for (let x = field.x - halfX; x <= field.x + halfX; x += 1.35) { fenceAdd(placements.fieldFence, x, field.z - halfZ, 0, 0.95); fenceAdd(placements.fieldFence, x, field.z + halfZ, 0, 0.95); }
-    for (let z = field.z - halfZ + 1.35; z < field.z + halfZ; z += 1.35) { fenceAdd(placements.fieldFence, field.x - halfX, z, Math.PI / 2, 0.95); fenceAdd(placements.fieldFence, field.x + halfX, z, Math.PI / 2, 0.95); }
+    const halfX = s(field.id.startsWith('B-') ? 4.2 : 5.7); const halfZ = s(field.id.startsWith('B-') ? 3.7 : 4.4);
+    for (let x = field.x - halfX; x <= field.x + halfX; x += s(1.35)) { fenceAdd(placements.fieldFence, x, field.z - halfZ, 0, 0.95); fenceAdd(placements.fieldFence, x, field.z + halfZ, 0, 0.95); }
+    for (let z = field.z - halfZ + s(1.35); z < field.z + halfZ; z += s(1.35)) { fenceAdd(placements.fieldFence, field.x - halfX, z, Math.PI / 2, 0.95); fenceAdd(placements.fieldFence, field.x + halfX, z, Math.PI / 2, 0.95); }
   }
   const entries = [
     [cabinModelPath('fence_simple.glb'), placements.fence, '#647b70'], [cabinModelPath('fence_gate.glb'), placements.gate, '#687e70'],
@@ -346,7 +363,7 @@ async function buildCabinYardProps(scene, map) {
     [cabinModelPath('fence_simpleLow.glb'), placements.fieldFence, '#60786d'],
   ];
   // The models folder has no drying-rack asset; a simple muted wood rack is the allowed primitive fallback.
-  const rack = new THREE.Group(); rack.name = 'cabin-yard-drying-rack'; rack.position.set(212, y(212, 98), 98);
+  const rack = new THREE.Group(); rack.name = 'cabin-yard-drying-rack'; rack.position.set(dryingX, y(dryingX, dryingZ), dryingZ);
   const wood = new THREE.MeshStandardMaterial({ color: '#75654b', roughness: 1 });
   for (const [x, yy, z, w, h, d] of [[0, 0.7, 0, 2.2, 0.08, 0.08], [-0.9, 0.35, 0, 0.08, 0.7, 0.08], [0.9, 0.35, 0, 0.08, 0.7, 0.08], [0, 1.0, 0, 1.8, 0.06, 0.06]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wood); m.position.set(x, yy, z); m.castShadow = true; rack.add(m); }
   scene.add(rack);
@@ -355,7 +372,7 @@ async function buildCabinYardProps(scene, map) {
     addNormalizedCabinInstances('cart-high.glb', placements.cart.slice(0, 1), scene, 3.0, { castShadow: true }),
     addNormalizedCabinInstances('cart.glb', placements.cart.slice(1), scene, 2.6, { castShadow: true }),
   ]);
-  return { yard: YARD, cropBorderSegments: placements.fieldFence.length, yardFenceSegments: placements.fence.length + placements.gate.length, carts: placements.cart.length, colliders: [...fenceColliders, ...placements.gate.map((gate) => ({ x: gate.x, z: gate.y, radius: 0.32, type: 'gate-post' })), { x: 203, z: 99, radius: 0.55, type: 'woodpile' }, { x: 213, z: 87.5, radius: 0.48, type: 'yard-stumps' }, { x: 211.5, z: 95, radius: 0.48, type: 'crates' }, { x: 205, z: 98, radius: 0.6, type: 'bench' }, ...placements.cart.map((cart) => ({ x: cart.x, z: cart.y, radius: 1.8, type: 'cart' }))] };
+  return { yard: YARD, cropBorderSegments: placements.fieldFence.length, yardFenceSegments: placements.fence.length + placements.gate.length, carts: placements.cart.length, colliders: [...fenceColliders, ...placements.gate.map((gate) => ({ x: gate.x, z: gate.y, radius: 0.32, type: 'gate-post' })), { x: yardX(203), z: yardZ(99), radius: 0.55, type: 'woodpile' }, { x: yardX(213), z: yardZ(87.5), radius: 0.48, type: 'yard-stumps' }, { x: yardX(211.5), z: yardZ(95), radius: 0.48, type: 'crates' }, { x: yardX(205), z: yardZ(98), radius: 0.6, type: 'bench' }, ...placements.cart.map((cart) => ({ x: cart.x, z: cart.y, radius: 1.8, type: 'cart' }))] };
 }
 
 async function buildBoats(scene, map, paths, bridges) {
@@ -370,18 +387,27 @@ async function buildBoats(scene, map, paths, bridges) {
     }
     return nearest;
   };
+  const clearBoatSpot = (x, z) => x > map.bounds.minX + 2 && x < map.bounds.maxX - 2 && z > map.bounds.minY + 2 && z < map.bounds.maxY - 2
+    && !isInWater(x, z, map)
+    && distanceToRiverBank(x, z, map) >= 2.55
+    && pathDistance(x, z) >= 2.8
+    && !bridges.some((bridge) => Math.hypot(x - bridge.x, z - bridge.y) < 4.5);
   for (const boat of BOATS) {
-    if (isInWater(boat.x, boat.z, map)) continue;
-    const bankDistance = distanceToRiverBank(boat.x, boat.z, map);
-    if (bankDistance < 3.2) continue;
-    if (pathDistance(boat.x, boat.z) < 5.2) continue;
-    if (bridges.some((bridge) => Math.hypot(boat.x - bridge.x, boat.z - bridge.y) < 8)) continue;
-    accepted.push({ x: boat.x, y: boat.z, height: terrainHeightAt(boat.x, boat.z, map) + 0.035, rotation: boat.yaw, scale: 3 });
+    let position = clearBoatSpot(boat.x, boat.z) ? { x: boat.x, z: boat.z } : null;
+    for (let radius = 0.5; !position && radius <= 24; radius += 0.5) {
+      for (let spoke = 0; spoke < 48 && !position; spoke += 1) {
+        const angle = spoke * Math.PI * 2 / 48;
+        const x = boat.x + Math.cos(angle) * radius; const z = boat.z + Math.sin(angle) * radius;
+        if (clearBoatSpot(x, z)) position = { x, z };
+      }
+    }
+    if (!position) continue;
+    accepted.push({ x: position.x, y: position.z, height: terrainHeightAt(position.x, position.z, map) + 0.035, rotation: boat.yaw, scale: 3, zone: boat.zone, nudged: Math.hypot(position.x - boat.x, position.z - boat.z) > 0.001 });
   }
   await addInstancedModel('canoe.glb', accepted, scene, { tintStrength: 0.9, tintColor: '#c79d68', emissiveIntensity: 0.3, castShadow: true, receiveShadow: true });
   const paddle = accepted.map((boat, i) => ({ ...boat, x: boat.x + 1.0, y: boat.y, height: boat.height + 0.12, rotation: boat.rotation + (i % 2 ? 0.9 : -0.9), scale: 2.2 }));
   await addInstancedModel('canoe_paddle.glb', paddle, scene, { tintStrength: 0.7, tintColor: '#cfaa76', emissiveIntensity: 0.3 });
-  return { placed: accepted.length, scale: 3, placements: accepted.map((p, i) => ({ x: p.x, z: p.y, colliderRadius: 1.8, type: 'boat' })), byZone: Object.fromEntries(map.zones.map((zone) => [zone.id, BOATS.filter((boat) => boat.zone === zone.id).filter((boat) => accepted.some((p) => p.x === boat.x && p.y === boat.z)).length])) };
+  return { placed: accepted.length, nudged: accepted.filter((boat) => boat.nudged).length, scale: 3, placements: accepted.map((p) => ({ x: p.x, z: p.y, colliderRadius: 1.8, type: 'boat' })), byZone: Object.fromEntries(map.zones.map((zone) => [zone.id, accepted.filter((boat) => boat.zone === zone.id).length])) };
 }
 
 export async function createMilestone1C(map, river, scene, { quality = 'high' } = {}) {
@@ -409,6 +435,6 @@ export async function createMilestone1C(map, river, scene, { quality = 'high' } 
     update, setQuality(next) { quality = next; flies.update(time, quality); mist.setQuality(next); },
     colliders: [...yard.colliders, ...yardProps.colliders, ...camps.colliders, ...boats.placements, hollowLogCollider],
     clearingCenters: getMilestone1CClearings(),
-    report: { buildings: yard.buildings.map(({ id, file, preview, x, z, scale, sourceSize, collisionRadius }) => ({ id, file, preview, zone: 'C', x, z, width: VILLAGE_WIDTH, scale, sourceSize, collisionRadius })), yard: { width: YARD.width, depth: YARD.depth, fenceSegments: yardProps.yardFenceSegments, cropBorderSegments: yardProps.cropBorderSegments, carts: yardProps.carts, shortPaths: 3, gatePathNode: '(207,82)' }, hollowLog: { zone: 'B', x: 116, z: 102, collisionRadius: hollowLogCollider.radius }, camps: { total: CAMPS.length, byZone: Object.fromEntries(map.zones.map((zone) => [zone.id, { camps: CAMPS.filter((camp) => camp.zone === zone.id).length, tents: CAMPS.filter((camp) => camp.zone === zone.id).reduce((sum, camp) => sum + camp.tents, 0) }])), hidden: CAMPS.filter((c) => c.zone !== 'C').length, tentCounts: camps.tentCounts, tentModels: 'tent_detailedClosed.glb', campfireModel: 'campfire_stones.glb' }, boats, flowers, fireflies: { high: 150, medium: 99, low: 51 }, bats: bats.bats.length },
+    report: { buildings: yard.buildings.map(({ id, file, preview, x, z, scale, sourceSize, collisionRadius }) => ({ id, file, preview, zone: 'C', x, z, width: VILLAGE_WIDTH, scale, sourceSize, collisionRadius })), yard: { width: YARD.width, depth: YARD.depth, fenceSegments: yardProps.yardFenceSegments, cropBorderSegments: yardProps.cropBorderSegments, carts: yardProps.carts, shortPaths: 3, gatePathNode: `(${VILLAGE.x.toFixed(1)},${(82 * MAP_SCALE).toFixed(1)})` }, hollowLog: { zone: 'B', x: s(116), z: s(102), collisionRadius: hollowLogCollider.radius }, camps: { total: CAMPS.length, byZone: Object.fromEntries(map.zones.map((zone) => [zone.id, { camps: CAMPS.filter((camp) => camp.zone === zone.id).length, tents: CAMPS.filter((camp) => camp.zone === zone.id).reduce((sum, camp) => sum + camp.tents, 0) }])), hidden: CAMPS.filter((c) => c.zone !== 'C').length, tentCounts: camps.tentCounts, tentModels: 'tent_detailedClosed.glb', campfireModel: 'campfire_stones.glb' }, boats, flowers, fireflies: { high: 150, medium: 99, low: 51 }, bats: bats.bats.length },
   };
 }

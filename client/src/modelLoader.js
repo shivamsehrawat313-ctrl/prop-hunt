@@ -4,6 +4,39 @@ import { gradeModelMaterial } from './palette.js';
 
 const gltfLoader = new GLTFLoader();
 const modelCache = new Map();
+const distanceCulledMeshes = new Set();
+const INSTANCE_VIEW_DISTANCE = 48;
+const INSTANCE_VIEW_DISTANCE_SQ = INSTANCE_VIEW_DISTANCE * INSTANCE_VIEW_DISTANCE;
+
+function trackForDistanceCulling(instances, matrices) {
+  instances.userData.distanceCullMatrices = matrices;
+  instances.userData.distanceCullLastX = Number.NaN;
+  instances.userData.distanceCullLastZ = Number.NaN;
+  distanceCulledMeshes.add(instances);
+}
+
+export function updateDistanceCulledInstances(playerPosition) {
+  for (const instances of distanceCulledMeshes) {
+    const dx = playerPosition.x - instances.userData.distanceCullLastX;
+    const dz = playerPosition.z - instances.userData.distanceCullLastZ;
+    if (dx * dx + dz * dz < 4) continue;
+    instances.userData.distanceCullLastX = playerPosition.x;
+    instances.userData.distanceCullLastZ = playerPosition.z;
+    const visible = instances.userData.distanceCullMatrices
+      .map((matrix) => {
+        const x = matrix.elements[12];
+        const z = matrix.elements[14];
+        const ox = x - playerPosition.x;
+        const oz = z - playerPosition.z;
+        return { matrix, distanceSq: ox * ox + oz * oz };
+      })
+      .filter((item) => item.distanceSq <= INSTANCE_VIEW_DISTANCE_SQ)
+      .sort((a, b) => a.distanceSq - b.distanceSq);
+    for (let index = 0; index < visible.length; index += 1) instances.setMatrixAt(index, visible[index].matrix);
+    instances.count = visible.length;
+    instances.instanceMatrix.needsUpdate = true;
+  }
+}
 
 export async function loadModel(fileName) {
   if (!modelCache.has(fileName)) {
@@ -70,6 +103,7 @@ export async function addInstancedModel(fileName, placements, scene, { tintStren
   const groups = [];
   for (const source of sources) {
     const instances = new THREE.InstancedMesh(source.geometry, source.material, placements.length);
+    const cullMatrices = [];
     instances.castShadow = castShadow;
     instances.receiveShadow = receiveShadow;
     const base = new THREE.Matrix4();
@@ -84,10 +118,12 @@ export async function addInstancedModel(fileName, placements, scene, { tintStren
       const position = new THREE.Vector3(item.x, item.height ?? 0.08, item.y);
       base.compose(position, rotation, scale).multiply(source.world);
       instances.setMatrixAt(i, base);
+      cullMatrices.push(base.clone());
     }
     instances.instanceMatrix.needsUpdate = true;
     instances.computeBoundingSphere();
     scene.add(instances);
+    trackForDistanceCulling(instances, cullMatrices);
     groups.push(instances);
   }
   return groups;
@@ -104,6 +140,7 @@ export async function addUntintedInstancedModel(fileName, placements, scene, { c
     const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
     const materials = sourceMaterials.map((material) => material.clone());
     const instances = new THREE.InstancedMesh(object.geometry, Array.isArray(object.material) ? materials : materials[0], placements.length);
+    const cullMatrices = [];
     instances.castShadow = castShadow;
     instances.receiveShadow = receiveShadow;
     const sourceWorld = object.matrixWorld.clone();
@@ -115,10 +152,12 @@ export async function addUntintedInstancedModel(fileName, placements, scene, { c
       const position = new THREE.Vector3(item.x, item.height ?? 0.08, item.y);
       base.compose(position, rotation, scale).multiply(sourceWorld);
       instances.setMatrixAt(i, base);
+      cullMatrices.push(base.clone());
     }
     instances.instanceMatrix.needsUpdate = true;
     instances.computeBoundingSphere();
     scene.add(instances);
+    trackForDistanceCulling(instances, cullMatrices);
     groups.push(instances);
   });
   return groups;

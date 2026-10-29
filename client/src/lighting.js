@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { palette } from './palette.js';
+import { MAP_SCALE } from '../../shared/constants.js';
 
 export function createLighting(scene, map) {
   scene.background = new THREE.Color(palette.tealDeep);
-  scene.fog = new THREE.Fog(new THREE.Color(palette.tealDeep), 120, 220);
+  scene.fog = new THREE.Fog(new THREE.Color(palette.tealDeep), 120 * MAP_SCALE, 220 * MAP_SCALE);
 
   const hemi = new THREE.HemisphereLight(new THREE.Color('#a7eee0'), new THREE.Color('#24463e'), map.lighting.hemisphere);
   scene.add(hemi);

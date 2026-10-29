@@ -5,6 +5,20 @@ export const CAMERA_TILT_DEGREES = 57;
 export const CAMERA_FIELD_OF_VIEW_DEGREES = 56;
 export const CAMERA_REFERENCE_HEIGHT = 1080;
 
+export const MAP_SCALE = 0.575;
+export const TREE_KEEP_RATIO = 0.68;
+export const MAX_TERRAIN_SLOPE = 0.16;
+
+export const HUNTER_CONE_RANGE = 10;
+export const HUNTER_CLOSE_CIRCLE_RANGE = 2.5;
+export const HIDER_SIGHT_RADIUS = 5.5;
+export const PISTOL_RANGE = 10;
+export const CROSSBOW_RANGE = 14;
+export const SHIMMER_DISTANCE = 4;
+export const SPLASH_HEARING_DISTANCE = 6;
+export const HIDE_PHASE_SECONDS = 10;
+export const HUNT_PHASE_SECONDS = 120;
+
 
 export const PLAYER_HEIGHT_UNITS = 1;
 export const PATH_WIDTH_UNITS = 3;

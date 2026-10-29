@@ -1,5 +1,5 @@
 ﻿import * as THREE from 'three';
-import map from '../../maps/forest.json' with { type: 'json' };
+import map from '../../shared/map.js';
 import { palette } from './palette.js';
 import { createTerrain } from './terrain.js';
 import { createRiver } from './river.js';

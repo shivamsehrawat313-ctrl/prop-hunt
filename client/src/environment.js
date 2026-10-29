@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { loadModel, addInstancedModel, addUntintedInstancedModel } from './modelLoader.js';
+import { loadModel, addInstancedModel, addUntintedInstancedModel, updateDistanceCulledInstances } from './modelLoader.js';
 import { PlacementValidator } from './placementValidator.js';
 import { terrainHeightAt } from './terrain.js';
 import { createMilestone1C, getMilestone1CClearings } from './milestone1c.js';
+import { MAP_SCALE, TREE_KEEP_RATIO } from '../../shared/constants.js';
 
 const HIDER_MODELS = {
   hiderBushes: 'plant_bushDetailed.glb',
@@ -91,22 +92,81 @@ function recordResult(report, zone, type, accepted) {
 }
 
 function reservePlacement({ validator, report, zone, type, x, z, footprintRadius, collisionRadius = 0, ...data }) {
-  if (type !== 'reeds' && validator.milestone1CClearings?.some((area) => Math.hypot(x - area.x, z - area.z) < area.radius + footprintRadius)) {
+  const clearOf1C = (px, pz) => type === 'reeds' || !validator.milestone1CClearings?.some((area) => Math.hypot(px - area.x, pz - area.z) < area.radius + footprintRadius);
+  let px = x; let pz = z; let failure = clearOf1C(px, pz) ? validator.rejectReason(px, pz, footprintRadius, zone) : 'milestone1cClearance';
+  if (failure && type !== 'trees') {
+    for (let radius = 0.5; failure && radius <= 8; radius += 0.5) {
+      for (let spoke = 0; spoke < 32 && failure; spoke += 1) {
+        const angle = spoke * Math.PI * 2 / 32;
+        const nx = x + Math.cos(angle) * radius; const nz = z + Math.sin(angle) * radius;
+        if (!clearOf1C(nx, nz)) continue;
+        const nextFailure = validator.rejectReason(nx, nz, footprintRadius, zone);
+        if (!nextFailure) { px = nx; pz = nz; failure = null; }
+      }
+    }
+  }
+  if (failure) {
     recordResult(report, zone.id, type, false);
     return null;
   }
-  const reason = validator.rejectReason(x, z, footprintRadius, zone);
-  if (reason) {
-    recordResult(report, zone.id, type, false);
-    return null;
-  }
-  const object = { zone: zone.id, type, x, z, footprintRadius, collisionRadius, ...data };
+  const moved = Math.hypot(px - x, pz - z) > 0.001;
+  const object = { zone: zone.id, type, x: px, z: pz, footprintRadius, collisionRadius, ...data, ...(moved ? { nudgedFrom: { x, z }, nudgedDistance: Math.hypot(px - x, pz - z) } : {}) };
   validator.reserve(object);
   recordResult(report, zone.id, type, true);
+  if (moved) (validator.nudgedPlacements ||= []).push({ type, zone: zone.id, from: { x, z }, to: { x: px, z: pz }, distance: object.nudgedDistance });
   return object;
 }
 
+function thinTrees(objects, map) {
+  const candidates = objects.filter((object) => object.type === 'trees');
+  const byZoneAndType = (rows) => Object.fromEntries(map.zones.map((zone) => [zone.id, Object.fromEntries(
+    [...new Set(rows.filter((item) => item.zone === zone.id).map((item) => item.model))].sort().map((model) => [model, rows.filter((item) => item.zone === zone.id && item.model === model).length]),
+  )]));
+  const before = byZoneAndType(candidates);
+  const landmarks = [
+    { zone: 'A', x: s(18), z: s(94) }, { zone: 'A', x: s(14), z: s(20) }, { zone: 'A', x: s(71), z: s(105) }, { zone: 'A', x: s(15), z: s(108) },
+    { zone: 'B', x: s(101), z: s(103) }, { zone: 'B', x: s(147), z: s(21) }, { zone: 'B', x: s(116), z: s(102) }, { zone: 'B', x: s(138), z: s(29) },
+    { zone: 'C', x: s(207), z: s(92) }, { zone: 'C', x: s(224), z: s(15) },
+  ];
+  const protectedTrees = new Set(candidates.filter((item) => item.landmark === 'ancient-pine'));
+  for (const point of landmarks) {
+    const nearest = candidates.filter((item) => item.zone === point.zone).sort((a, b) => Math.hypot(a.x - point.x, a.z - point.z) - Math.hypot(b.x - point.x, b.z - point.z))[0];
+    if (nearest) protectedTrees.add(nearest);
+  }
+  const kept = new Set(protectedTrees);
+  for (const zone of map.zones) {
+    const models = [...new Set(candidates.filter((item) => item.zone === zone.id).map((item) => item.model))];
+    for (const model of models) {
+      const group = candidates.filter((item) => item.zone === zone.id && item.model === model);
+      const pinned = group.filter((item) => protectedTrees.has(item));
+      const target = Math.max(pinned.length, Math.round(group.length * TREE_KEEP_RATIO));
+      const selected = [...pinned];
+      const pending = group.filter((item) => !protectedTrees.has(item));
+      while (selected.length < target && pending.length) {
+        let bestIndex = 0; let bestDistance = -1;
+        for (let i = 0; i < pending.length; i += 1) {
+          const item = pending[i];
+          const nearest = selected.length ? Math.min(...selected.map((other) => (item.x - other.x) ** 2 + (item.z - other.z) ** 2)) : Infinity;
+          if (nearest > bestDistance) { bestDistance = nearest; bestIndex = i; }
+        }
+        selected.push(pending.splice(bestIndex, 1)[0]);
+      }
+      selected.forEach((item) => kept.add(item));
+      group.forEach((item) => { if (!selected.includes(item)) kept.delete(item); });
+    }
+  }
+  const afterRows = candidates.filter((item) => kept.has(item));
+  const after = byZoneAndType(afterRows);
+  const removed = candidates.length - afterRows.length;
+  const index = new Set(afterRows);
+  return { objects: objects.filter((item) => item.type !== 'trees' || index.has(item)), report: { before, after, removed, keepRatio: candidates.length ? Number((afterRows.length / candidates.length).toFixed(4)) : 1 } };
+}
+
+const s = (value) => value * MAP_SCALE;
+
 function generateGroups({ validator, report, zone, type, target, models, random, getObject, anchor, centerFactory, groupRange = [3, 6], spread = [0.5, 4.0], maxAttempts = 50 }) {
+  const map = validator.map;
+  const scaledSpread = spread.map((distance) => distance * MAP_SCALE);
   const placed = [];
   let attempts = 0;
   let anchorDone = false;
@@ -121,15 +181,15 @@ function generateGroups({ validator, report, zone, type, target, models, random,
       center = centerFactory(random);
     } else {
       center = {
-        x: zone.minX + 4 + random() * (zone.maxX - zone.minX - 8),
-        z: 4 + random() * 112,
+        x: zone.minX + 4 * MAP_SCALE + random() * (zone.maxX - zone.minX - 8 * MAP_SCALE),
+        z: map.bounds.minY + 4 * MAP_SCALE + random() * (map.bounds.maxY - map.bounds.minY - 8 * MAP_SCALE),
       };
     }
     let localPlaced = 0;
     for (let index = 0; index < groupSize && placed.length < target; index += 1) {
       attempts += 1;
       const angle = random() * Math.PI * 2;
-      const distance = index === 0 ? random() * spread[1] : spread[0] + random() * (spread[1] - spread[0]);
+      const distance = index === 0 ? random() * scaledSpread[1] : scaledSpread[0] + random() * (scaledSpread[1] - scaledSpread[0]);
       const candidate = getObject(random, center.x + Math.cos(angle) * distance, center.z + Math.sin(angle) * distance, models);
       const accepted = reservePlacement({ validator, report, zone, type, ...candidate });
       if (accepted) {
@@ -160,7 +220,7 @@ function placeTreeRows({ validator, report, map, zone, config, random, models, t
     const z = THREE.MathUtils.lerp(a.y, b.y, t);
     const nx = -(b.y - a.y) / length;
     const nz = (b.x - a.x) / length;
-    const offset = map.paths.width * 0.5 + 1.5 + 2.2 + random() * 2.0;
+    const offset = map.paths.width * 0.5 + 1.5 + 2.2 * MAP_SCALE + random() * 2.0 * MAP_SCALE;
     const object = treeData(random, x + nx * offset * side, z + nz * offset * side, models);
     const accepted = reservePlacement({ validator, report, zone, type: 'trees', ...object });
     attempts += 1;
@@ -168,7 +228,7 @@ function placeTreeRows({ validator, report, map, zone, config, random, models, t
     else rejected += 1;
   }
   while (placed.length < config.rowCount && attempts < config.rowCount * 10) {
-    const object = treeData(random, zone.minX + 3 + random() * (zone.maxX - zone.minX - 6), 5 + random() * 110, models);
+    const object = treeData(random, zone.minX + 3 * MAP_SCALE + random() * (zone.maxX - zone.minX - 6 * MAP_SCALE), map.bounds.minY + 5 * MAP_SCALE + random() * (map.bounds.maxY - map.bounds.minY - 10 * MAP_SCALE), models);
     const accepted = reservePlacement({ validator, report, zone, type: 'trees', ...object });
     attempts += 1;
     if (accepted) placed.push(accepted);
@@ -298,13 +358,14 @@ function createGroundPlants(map, scene, features, validator, clearings = []) {
   const leaves = [];
   const featureBases = features.map(({ x, z }) => ({ x, z }));
   const maxAttempts = 18000;
-  const grassTarget = 3200;
+  const grassTarget = Math.round(3200 * MAP_SCALE * MAP_SCALE);
   for (let attempt = 0; attempt < maxAttempts && grass.length < grassTarget; attempt += 1) {
-    const x = 2 + random() * 236; const z = 2 + random() * 116;
+    const x = map.bounds.minX + 2 * MAP_SCALE + random() * (map.bounds.maxX - map.bounds.minX - 4 * MAP_SCALE);
+    const z = map.bounds.minY + 2 * MAP_SCALE + random() * (map.bounds.maxY - map.bounds.minY - 4 * MAP_SCALE);
     if (distanceToPaths(x, z, validator.paths) < map.paths.width * 0.5 + 1.5) continue;
     if (distanceToRiverBankFast(x, z, map) < 1.5) continue;
     if (clearings.some((area) => Math.hypot(x - area.x, z - area.z) < area.radius)) continue;
-    if (Math.hypot(x - 207, z - 87) < 22) continue;
+    if (Math.hypot(x - 207 * MAP_SCALE, z - 87 * MAP_SCALE) < 22 * MAP_SCALE) continue;
     const nearBank = Math.min(1, Math.max(0, (8 - distanceToRiverBankFast(x, z, map)) / 6));
     let nearFeature = false;
     for (let i = 0; i < featureBases.length; i += 1) if (Math.hypot(x - featureBases[i].x, z - featureBases[i].z) < 2.6) { nearFeature = true; break; }
@@ -358,6 +419,8 @@ function createGroundPlants(map, scene, features, validator, clearings = []) {
   leafMesh.instanceMatrix.needsUpdate = true; if (leafMesh.instanceColor) leafMesh.instanceColor.needsUpdate = true; scene.add(leafMesh);
   return {
     count: grass.length,
+    fernCount: ferns.length,
+    fallenLeafCount: leaves.length,
     setQuality(level) {
       const ratio = level === 'high' ? 1 : level === 'medium' ? 0.8 : 0.5;
       grassMesh.count = Math.floor(grass.length * ratio);
@@ -384,18 +447,18 @@ async function createCropFields(map, scene, heights, scaleInfo, validator, repor
   if (!map.zones.some((zone) => zone.id === 'C')) return { fields: 0, rows: 0, plants: 0 };
   const cabinCrop = (name) => `/cabin%20models/${name}`;
   const fieldStarts = [
-    { id: 'C-wheat', zone: 'C', x: 170, z: 96, crops: [cabinCrop('crops_wheatStageA.glb'), cabinCrop('crops_wheatStageB.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
-    { id: 'C-roots', zone: 'C', x: 184, z: 96, crops: [cabinCrop('crop_carrot.glb'), cabinCrop('crop_turnip.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
-    { id: 'C-melons', zone: 'C', x: 170, z: 108, crops: [cabinCrop('crop_melon.glb'), cabinCrop('crop_pumpkin.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
-    { id: 'C-leaves', zone: 'C', x: 184, z: 108, crops: [cabinCrop('crops_leafsStageA.glb'), cabinCrop('crops_leafsStageB.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
-    { id: 'B-river-small', zone: 'B', x: 141, z: 98, crops: [cabinCrop('crops_leafsStageA.glb'), cabinCrop('crops_leafsStageB.glb')], rowCount: 6, plantsPerRow: 8, rowLength: 6.5 },
-  ];
+    { id: 'C-wheat', zone: 'C', x: 94 / MAP_SCALE, z: 56 / MAP_SCALE, crops: [cabinCrop('crops_wheatStageA.glb'), cabinCrop('crops_wheatStageB.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
+    { id: 'C-roots', zone: 'C', x: 100.8 / MAP_SCALE, z: 56 / MAP_SCALE, crops: [cabinCrop('crop_carrot.glb'), cabinCrop('crop_turnip.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
+    { id: 'C-melons', zone: 'C', x: 94 / MAP_SCALE, z: 63.5 / MAP_SCALE, crops: [cabinCrop('crop_melon.glb'), cabinCrop('crop_pumpkin.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
+    { id: 'C-leaves', zone: 'C', x: 100.8 / MAP_SCALE, z: 63.5 / MAP_SCALE, crops: [cabinCrop('crops_leafsStageA.glb'), cabinCrop('crops_leafsStageB.glb')], rowCount: 12, plantsPerRow: 12, rowLength: 10 },
+    { id: 'B-river-small', zone: 'B', x: 88 / MAP_SCALE - 3.25, z: 58 / MAP_SCALE, crops: [cabinCrop('crops_leafsStageA.glb'), cabinCrop('crops_leafsStageB.glb')], rowCount: 6, plantsPerRow: 8, rowLength: 6.5 },
+  ].map((field) => ({ ...field, x: field.x * MAP_SCALE, z: field.z * MAP_SCALE, rowLength: field.rowLength * MAP_SCALE }));
   const rowPlacements = []; const rowEnds = []; const rowCorners = []; const soilSingles = [];
   const plantsByModel = new Map(); const perField = [];
   const random = randomFor(map.seed, 'crop-field-rows');
   for (const field of fieldStarts) {
     let plantCount = 0;
-    const rowSpacing = field.rowCount === 12 ? 0.64 : 0.68;
+    const rowSpacing = (field.rowCount === 12 ? 0.64 : 0.68) * MAP_SCALE;
     for (let row = 0; row < field.rowCount; row += 1) {
       const z = field.z - ((field.rowCount - 1) * rowSpacing) / 2 + row * rowSpacing;
       const rowCenterX = field.x + field.rowLength * 0.5;
@@ -408,7 +471,7 @@ async function createCropFields(map, scene, heights, scaleInfo, validator, repor
         if (row % 3 === 0) soilSingles.push({ x: rowCenterX, y: z, height: terrainHeightAt(rowCenterX, z, map) + 0.018, rotation: 0, scale: 0.7 });
       }
       for (let crop = 0; crop < field.plantsPerRow; crop += 1) {
-        const x = field.x + (field.rowLength - (field.plantsPerRow - 1) * 0.82) * 0.5 + crop * 0.82;
+        const x = field.x + (field.rowLength - (field.plantsPerRow - 1) * 0.82 * MAP_SCALE) * 0.5 + crop * 0.82 * MAP_SCALE;
         const cropZone = map.zones.find((zone) => zone.id === field.zone);
         const cropModel = field.crops[(row + crop) % field.crops.length];
         const cropScale = (0.88 / Math.max(0.01, heights[cropModel])) * (0.94 + random() * 0.12);
@@ -424,7 +487,7 @@ async function createCropFields(map, scene, heights, scaleInfo, validator, repor
     perField.push({ id: field.id, zone: field.zone, rows: field.rowCount, plants: plantCount });
   }
   for (const field of fieldStarts.filter((item) => item.zone === 'C')) {
-    const halfX = 5.7; const halfZ = 4.4;
+    const halfX = 5.7 * MAP_SCALE; const halfZ = 4.4 * MAP_SCALE;
     for (const [x, z, rotation] of [[field.x - halfX, field.z - halfZ, 0], [field.x + halfX, field.z - halfZ, Math.PI / 2], [field.x + halfX, field.z + halfZ, Math.PI], [field.x - halfX, field.z + halfZ, -Math.PI / 2]]) rowCorners.push({ x, y: z, height: terrainHeightAt(x, z, map) + 0.02, rotation, scale: 0.8 });
   }
   await Promise.all([
@@ -442,7 +505,7 @@ async function createCropFields(map, scene, heights, scaleInfo, validator, repor
 export async function createEnvironment(map, river, scene) {
   const validator = new PlacementValidator(map);
   const report = initializeReport(map);
-  const objects = [];
+  let objects = [];
   const clearings = getMilestone1CClearings();
   validator.milestone1CClearings = clearings;
   const scaleInfo = {};
@@ -475,7 +538,7 @@ export async function createEnvironment(map, river, scene) {
         : models[randomInt(rng, 0, models.length - 1)];
       const variation = 0.9 + rng() * 0.3;
       const normalization = 5 / heights[model];
-      const footprintRadius = Math.max(0.8, scaleInfo[model].width * normalization * variation * 0.52);
+      const footprintRadius = (zone.id === 'B' ? 0.34 : 0.31) * variation;
       return {
         x, z, model, scale: normalization * variation, variation,
         rotation: rng() * Math.PI * 2,
@@ -488,23 +551,23 @@ export async function createEnvironment(map, river, scene) {
     };
     const zoneTrees = [];
     if (zone.id === 'A') {
-      const ancient = treeData(random, 18, 94, ['tree_pineTallC_detailed.glb']);
+      const ancient = { ...treeData(random, 18 * MAP_SCALE, 94 * MAP_SCALE, ['tree_pineTallC_detailed.glb']), landmark: 'ancient-pine' };
       const anchor = reservePlacement({ validator, report, zone, type: 'trees', ...ancient });
       if (anchor) zoneTrees.push(anchor);
     }
     const groves = generateGroups({
       validator, report, zone, type: 'trees', target: config.groveCount, models: config.treeModels, random,
       getObject: treeData, groupRange: zone.id === 'C' ? [3, 5] : [4, 9], spread: [0.8, 4.6],
-      centerFactory: zone.id === 'C' ? (rng) => ({ x: rng() < 0.5 ? zone.minX + 4 + rng() * 15 : zone.maxX - 4 - rng() * 15, z: 5 + rng() * 110 }) : null,
+      centerFactory: zone.id === 'C' ? (rng) => ({ x: rng() < 0.5 ? zone.minX + 4 * MAP_SCALE + rng() * 15 * MAP_SCALE : zone.maxX - 4 * MAP_SCALE - rng() * 15 * MAP_SCALE, z: map.bounds.minY + 5 * MAP_SCALE + rng() * (map.bounds.maxY - map.bounds.minY - 10 * MAP_SCALE) }) : null,
     });
     zoneTrees.push(...groves);
     const rows = placeTreeRows({ validator, report, map, zone, config, random, models: config.treeModels, treeData });
     zoneTrees.push(...rows.placed);
     while (zoneTrees.length < config.treeCount) {
       const fillerX = zone.id === 'C'
-        ? (random() < 0.5 ? zone.minX + 4 + random() * 15 : zone.maxX - 4 - random() * 15)
-        : zone.minX + 3 + random() * (zone.maxX - zone.minX - 6);
-      const filler = treeData(random, fillerX, 5 + random() * 110, config.treeModels);
+        ? (random() < 0.5 ? zone.minX + 4 * MAP_SCALE + random() * 15 * MAP_SCALE : zone.maxX - 4 * MAP_SCALE - random() * 15 * MAP_SCALE)
+        : zone.minX + 3 * MAP_SCALE + random() * (zone.maxX - zone.minX - 6 * MAP_SCALE);
+      const filler = treeData(random, fillerX, map.bounds.minY + 5 * MAP_SCALE + random() * (map.bounds.maxY - map.bounds.minY - 10 * MAP_SCALE), config.treeModels);
       const accepted = reservePlacement({ validator, report, zone, type: 'trees', ...filler });
       if (accepted) zoneTrees.push(accepted);
       else if ((report[zone.id].trees?.rejected || 0) > config.treeCount * 22) break;
@@ -513,9 +576,21 @@ export async function createEnvironment(map, river, scene) {
     objects.push(...zoneTrees);
   }
 
+  // Thin the already validated tree set before placing solid decoys and props so
+  // those objects do not reserve space behind trees that have been removed.
+  const treeThinning = thinTrees(objects, map);
+  objects = treeThinning.objects;
+  validator.occupied = [...objects];
+  for (const zone of map.zones) {
+    const beforeCount = Object.values(treeThinning.report.before[zone.id]).reduce((sum, count) => sum + count, 0);
+    const afterCount = Object.values(treeThinning.report.after[zone.id]).reduce((sum, count) => sum + count, 0);
+    const removed = beforeCount - afterCount;
+    if (removed) { report[zone.id].trees ||= { placed: 0, rejected: 0 }; report[zone.id].trees.placed -= removed; report[zone.id].trees.rejected += removed; }
+  }
+
   const boulderAnchor = (random) => ({
-    x: 138 + Math.cos(random() * Math.PI * 2) * 5.4,
-    z: 29 + Math.sin(random() * Math.PI * 2) * 5.4,
+    x: 138 * MAP_SCALE + Math.cos(random() * Math.PI * 2) * 5.4 * MAP_SCALE,
+    z: 29 * MAP_SCALE + Math.sin(random() * Math.PI * 2) * 5.4 * MAP_SCALE,
   });
   const typeConfigs = [
     {
@@ -588,7 +663,7 @@ export async function createEnvironment(map, river, scene) {
   const logs = generateGroups({
     validator, report, zone: zoneB, type: 'logs', target: 18,
     models: ['tree-log-small.glb', 'tree-log.glb'], random: logRandom, groupRange: [3, 6], spread: [0.5, 2.6],
-    anchor: () => ({ x: 110, z: 104 }),
+    anchor: () => ({ x: 110 * MAP_SCALE, z: 104 * MAP_SCALE }),
     getObject: (rng, x, z, models) => {
       const model = models[randomInt(rng, 0, models.length - 1)];
       const variation = 0.9 + rng() * 0.3;
@@ -601,7 +676,7 @@ export async function createEnvironment(map, river, scene) {
   const trunks = generateGroups({
     validator, report, zone: zoneB, type: 'deadTrunks', target: 6, models: ['tree-trunk.glb'],
     random: randomFor(map.seed, 'dead-trunks-B'), groupRange: [3, 6], spread: [1.2, 3.8],
-    anchor: () => ({ x: 126, z: 97 }),
+    anchor: () => ({ x: 126 * MAP_SCALE, z: 97 * MAP_SCALE }),
     getObject: (rng, x, z, models) => {
       const variation = 0.9 + rng() * 0.3;
       const heightScale = 2.5 / heights[models[0]] * variation;
@@ -698,11 +773,13 @@ export async function createEnvironment(map, river, scene) {
   const placed = objects.length + reedBeds.count;
   const treesByZone = Object.fromEntries(map.zones.map((zone) => [zone.id, report[zone.id].trees?.placed || 0]));
   const hiderCountsByZone = Object.fromEntries(map.zones.map((zone) => [zone.id, Object.fromEntries(['hiderStumps', 'hiderBoulders', 'hiderBushes'].map((type) => [type, report[zone.id][type]?.placed || 0]))]));
-  const placementReport = { placed, rejected, removedOnValidation, clearedFor1C, clearedFor1CByZoneAndType, byZone: report, treesByZone, hiderCountsByZone, colliders: colliders.length, grassTufts: groundPlants.count, cropFields, milestone1C: milestone1C.report };
+  treeThinning.report.afterValidation = Object.fromEntries(map.zones.map((zone) => [zone.id, objects.filter((item) => item.type === 'trees' && item.zone === zone.id).reduce((counts, item) => { counts[item.model] = (counts[item.model] || 0) + 1; return counts; }, {})]));
+  const placementReport = { placed, rejected, removedOnValidation, clearedFor1C, clearedFor1CByZoneAndType, nudgedObjects: validator.nudgedPlacements || [], nudgedObjectCount: validator.nudgedPlacements?.length || 0, byZone: report, treesByZone, treeThinning: treeThinning.report, hiderCountsByZone, colliders: colliders.length, grassPlants: { tufts: groundPlants.count, ferns: groundPlants.fernCount, fallenLeaves: groundPlants.fallenLeafCount }, grassTufts: groundPlants.count, cropFields, milestone1C: milestone1C.report };
   console.info('[placement-report] environment', placementReport);
   if (import.meta.env.DEV) {
     window.__environmentPlacementReport = placementReport;
-    window.__environmentObjectPositions = objects.map(({ type, model, zone, x, z }) => ({ type, model, zone, x, z }));
+    window.__environmentObjectPositions = objects.map(({ type, model, zone, x, z, footprintRadius }) => ({ type, model, zone, x, z, footprintRadius }));
+    window.__environmentColliders = colliders;
   }
 
   let highlighted = false;
@@ -723,6 +800,7 @@ export async function createEnvironment(map, river, scene) {
 
   function update(playerPosition, time = 0) {
     canopyFadeState.playerPosition.copy(playerPosition);
+    updateDistanceCulledInstances(playerPosition);
     reedBeds.update(time);
     milestone1C.update(time);
   }

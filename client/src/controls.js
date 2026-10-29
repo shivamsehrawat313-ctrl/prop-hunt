@@ -37,8 +37,8 @@ export class PlayerControls {
       const speedFactor = bridge ? 1 : depth === 0 ? 1 : depth >= DEEP_CHANNEL_THRESHOLD ? DEEP_WATER_SPEED_FACTOR : SHALLOW_WATER_SPEED_FACTOR;
       const stepX = (dx / length) * this.speed * speedFactor * delta;
       const stepZ = (dz / length) * this.speed * speedFactor * delta;
-      const nextX = THREE.MathUtils.clamp(this.position.x + stepX, 1, 239);
-      const nextZ = THREE.MathUtils.clamp(this.position.z + stepZ, 1, 119);
+      const nextX = THREE.MathUtils.clamp(this.position.x + stepX, this.map.bounds.minX + 1, this.map.bounds.maxX - 1);
+      const nextZ = THREE.MathUtils.clamp(this.position.z + stepZ, this.map.bounds.minY + 1, this.map.bounds.maxY - 1);
       if (this.canOccupy(nextX, this.position.z)) this.position.x = nextX;
       if (this.canOccupy(this.position.x, nextZ)) this.position.z = nextZ;
       this.player.rotation.y = Math.atan2(-dx, -dz);

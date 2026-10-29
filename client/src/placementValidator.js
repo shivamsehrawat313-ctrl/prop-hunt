@@ -19,7 +19,7 @@ export class PlacementValidator {
     const clearanceFailure = this.rejectLandscapeClearance(x, z, radius, zone);
     if (clearanceFailure) return clearanceFailure;
     for (const other of this.occupied) {
-      if (Math.hypot(x - other.x, z - other.z) < radius + other.footprintRadius + 0.18) return 'overlap';
+      if (Math.hypot(x - other.x, z - other.z) < radius + other.footprintRadius + 0.5) return 'overlap';
     }
     return null;
   }

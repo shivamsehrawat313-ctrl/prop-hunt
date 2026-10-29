@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { addInstancedModel, loadModel } from './modelLoader.js';
 import { distanceToRiverBank, isInWater, riverWidthAt } from '../../shared/water.js';
 import { terrainHeightAt } from './terrain.js';
+import { MAP_SCALE } from '../../shared/constants.js';
 
 function nodeMap(paths) {
   return new Map(paths.nodes.map((node) => [node.id, node]));
@@ -31,10 +32,10 @@ function routePoints(map, from, to, nodes) {
 
   const dx = end.x - start.x; const dz = end.y - start.y;
   const length = Math.hypot(dx, dz);
-  if (length < 7) return [start, end];
+  if (length < 7 * MAP_SCALE) return [start, end];
   const normalX = -dz / length; const normalZ = dx / length;
   const hash = [...`${from}|${to}`].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 17);
-  const bend = 0.8 + (hash % 6) * 0.18;
+  const bend = (0.8 + (hash % 6) * 0.18) * MAP_SCALE;
   const midpoint = { x: (start.x + end.x) * 0.5, y: (start.y + end.y) * 0.5 };
   const controlsFor = (sign) => [
     start,
@@ -151,7 +152,7 @@ function addPathPebbles(lines, map, scene) {
   const rand = createRandom(map.seed ^ 0x41a92);
   for (const line of lines) for (let i = 1; i < line.length; i += 1) {
     const a = line[i - 1]; const b = line[i]; const dx = b.x - a.x; const dz = b.y - a.y; const len = Math.hypot(dx, dz) || 1;
-    const count = Math.floor(len / 2.6);
+    const count = Math.floor(len / (2.6 * MAP_SCALE));
     for (let j = 0; j < count; j += 1) {
       if (rand() > 0.33) continue;
       const t = (j + rand()) / count; const side = rand() < 0.5 ? -1 : 1; const offset = side * (map.paths.width * 0.5 + 0.18 + rand() * 0.28);
