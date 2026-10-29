@@ -448,3 +448,11 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Rough: no separate lobby poster image is present in `client/public/media`, so video is preloaded without a poster. Browser art tuning was not completed beyond the requested smoke check.
 - Next exact step: Phase E touch joystick/buttons, responsive portrait and landscape layout, low-end mobile quality default, and scripted 390x844 / 844x390 checks.
 - Commands: `npm test`; `npm run build`; `npm start`.
+
+## Phase E: mobile controls — done
+
+- Added a virtual touch joystick, role-aware weapon/disguise/lock/strike buttons, touch aim selection, safe-area spacing, no-scroll/no-zoom behavior, and larger touch targets. Keyboard and mouse controls remain available on desktop.
+- Low-spec touch devices start at Low quality using named core-count and memory thresholds; the quality controls still allow manual changes.
+- Tests: `npm test` passed multiplayer, vision, audio, and mobile layout suites. The mobile script checked the requested 390x844 portrait and 844x390 landscape footprints. `npm run build` passed with Vite's large-chunk advisory.
+- Rough: viewport verification is a scripted responsive footprint check rather than a physical-device visual run; browser art tuning remains limited. No map data or approved world layout was changed during Phases A–E.
+- Final commands: `npm install`; `npm run dev` for local development; `npm run build` then `npm start` for production; `npm test` for verification. Render uses `npm ci && npm run build`, `npm start`, and `/health`.

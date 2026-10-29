@@ -11,7 +11,8 @@
 
 * { box-sizing: border-box; }
 html, body, #game-shell { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #102c2a; }
-body { user-select: none; }
+html, body { overscroll-behavior: none; touch-action: none; }
+body { user-select: none; -webkit-user-select: none; }
 #game-shell { position: relative; isolation: isolate; }
 #scene { display: block; width: 100%; height: 100%; outline: none; }
 #vision-fog { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -96,6 +97,7 @@ button { font: inherit; cursor: pointer; }
 #hunter-blackout { position: absolute; z-index: 6; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,.94); color: #d4fff0; font-weight: 800; letter-spacing: .14em; }
 #hunter-blackout[hidden] { display:none !important; }
 #hunter-blackout span { color:#7ea99a; font:11px 'DM Mono',monospace; }
+#mobile-controls { display: none; }
 @keyframes game-shake { 25% { transform: translate(3px, -2px); } 50% { transform: translate(-3px, 2px); } 75% { transform: translate(2px, 2px); } }
 @keyframes pulse { 50% { opacity: .55; transform: scale(.9); } }
 
@@ -109,4 +111,16 @@ button { font: inherit; cursor: pointer; }
   .quality-row { gap: 3px; }
   .quality-row > span { display: none; }
   .toast { bottom: 75px; width: max-content; max-width: 90vw; }
+  .game-hud { top: 110px; width: calc(100vw - 20px); max-width: 440px; gap: 5px 8px; padding: 7px; font-size: 10px; }
+  .game-actions { gap: 4px; }
+  .game-actions select, #lock-disguise, #strike-button { min-height: 44px; }
+  #mobile-controls { position: absolute; z-index: 7; inset: auto 0 0; display: flex; justify-content: space-between; align-items: end; gap: 14px; padding: 0 max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); pointer-events: none; }
+  .move-stick { width: 138px; height: 138px; flex: 0 0 138px; display: grid; place-items: center; border: 2px solid rgba(198, 244, 224, .38); border-radius: 50%; background: rgba(8, 31, 32, .43); touch-action: none; pointer-events: auto; }
+  #move-stick-knob { width: 56px; height: 56px; border: 2px solid rgba(213, 255, 236, .7); border-radius: 50%; background: rgba(74, 180, 155, .66); box-shadow: 0 4px 16px #06181988; pointer-events: none; }
+  .mobile-actions { display: grid; grid-template-columns: repeat(2, minmax(68px, 82px)); gap: 9px; pointer-events: auto; }
+  .mobile-actions button { min-height: 58px; border: 1px solid rgba(181, 238, 216, .45); border-radius: 15px; background: rgba(8, 35, 34, .78); color: #e4fff4; font: 700 12px 'DM Mono', monospace; touch-action: manipulation; }
+  .mobile-actions button[hidden] { display: none; }
+  #mobile-strike { background: rgba(135, 60, 43, .88); }
+  #game-shell.in-match #mobile-controls { display: flex; }
+  .controls-panel { top: auto; bottom: 172px; right: 10px; }
 }

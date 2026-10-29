@@ -72,6 +72,15 @@
           <button id="mute-button" type="button">Mute</button><input id="master-volume" type="range" min="0" max="1" step="0.05" value="0.65" aria-label="Master volume" />
         </div>
       </section>
+      <section id="mobile-controls" aria-label="Touch game controls">
+        <div id="move-stick" class="move-stick" role="application" aria-label="Movement joystick"><span id="move-stick-knob"></span></div>
+        <div class="mobile-actions">
+          <button id="mobile-weapon" type="button" aria-label="Change weapon">Weapon</button>
+          <button id="mobile-disguise" type="button" aria-label="Change disguise">Prop</button>
+          <button id="mobile-lock" type="button" aria-label="Lock or unlock disguise">Lock</button>
+          <button id="mobile-strike" type="button" aria-label="Strike">Strike</button>
+        </div>
+      </section>
       <div id="hunter-blackout" hidden>YOU ARE THE HUNTER<span>HIDERS ARE HIDING</span></div>
       <div id="danger-pulse" aria-hidden="true"></div>
       <section id="scoreboard-screen" class="front-screen" hidden><div class="front-card"><h2 id="round-result"></h2><ul id="scoreboard-list" class="player-list"></ul><button id="next-round" type="button">Next round</button><button id="new-match" type="button" hidden>New match</button></div></section>

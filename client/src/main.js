@@ -44,6 +44,8 @@ import {
   VISION_FOG_OPACITY,
   VISION_FOG_REVEAL_RADIUS_UNITS,
   AUDIO_RIVER_HEARING_DISTANCE,
+  MOBILE_LOW_END_MAX_CORES,
+  MOBILE_LOW_END_MAX_MEMORY_GB,
 } from '../../shared/constants.js';
 import './style.css';
 import { MultiplayerClient } from './multiplayer.js';
@@ -108,7 +110,10 @@ setModelLoadProgressHandler(({ percent, fileName }) => {
 const playerViews = new Map();
 const disguiseModels = { stump: 'stump_squareDetailed.glb', boulder: 'rock_smallTopB.glb', bush: 'plant_bushDetailed.glb' };
 const disguiseTints = { stump: '#648177', boulder: '#718b89', bush: '#64836f' };
-let quality = 'high';
+const lowEndTouchDevice = matchMedia('(pointer: coarse)').matches
+  && ((navigator.hardwareConcurrency || Infinity) <= MOBILE_LOW_END_MAX_CORES
+    || (navigator.deviceMemory || Infinity) <= MOBILE_LOW_END_MAX_MEMORY_GB);
+let quality = lowEndTouchDevice ? 'low' : 'high';
 let environment;
 let myRole = null;
 let lastVisionDraw = 0;
@@ -403,6 +408,17 @@ window.addEventListener('keydown', (event) => {
 });
 
 document.querySelectorAll('[data-quality]').forEach((button) => button.addEventListener('click', () => setQuality(button.dataset.quality)));
+const cycleSelect = (selector) => {
+  const select = document.querySelector(selector);
+  if (!select || select.disabled) return;
+  select.selectedIndex = (select.selectedIndex + 1) % select.options.length;
+  document.querySelector(selector === '#weapon-select' ? '#mobile-weapon' : '#mobile-disguise').textContent = select.value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+};
+document.querySelector('#mobile-weapon').addEventListener('click', () => cycleSelect('#weapon-select'));
+document.querySelector('#mobile-disguise').addEventListener('click', () => cycleSelect('#disguise-select'));
+document.querySelector('#mobile-lock').addEventListener('click', () => document.querySelector('#lock-disguise').click());
+document.querySelector('#mobile-strike').addEventListener('click', () => multiplayer?.strike());
 document.querySelector('#audio-unlock').addEventListener('click', async (event) => {
   await unlockAudio();
   event.currentTarget.textContent = 'AUDIO READY';
@@ -430,16 +446,20 @@ async function unlockAudio() {
 const aimRaycaster = new THREE.Raycaster();
 const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const aimPointer = new THREE.Vector2();
-canvas.addEventListener('pointermove', (event) => {
+function updateAimFromPointer(event) {
   if (!controls) return;
   aimPointer.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
   aimRaycaster.setFromCamera(aimPointer, camera);
   const point = aimRaycaster.ray.intersectPlane(aimPlane, new THREE.Vector3());
   if (point) { const dx = point.x - player.position.x; const dz = point.z - player.position.z; const length = Math.hypot(dx, dz) || 1; multiplayer.setAim({ x: dx / length, z: dz / length }); }
+}
+canvas.addEventListener('pointermove', updateAimFromPointer);
+canvas.addEventListener('pointerdown', (event) => {
+  updateAimFromPointer(event);
+  if (event.pointerType !== 'touch' && event.button === 0 && multiplayer.room?.phase === 'hunt') multiplayer.strike();
 });
-canvas.addEventListener('pointerdown', (event) => { if (event.button === 0 && multiplayer.room?.phase === 'hunt') multiplayer.strike(); });
 window.addEventListener('keydown', (event) => { if (event.code === 'Space' && multiplayer.room?.phase === 'hunt') { event.preventDefault(); multiplayer.strike(); } });
-setQuality('high');
+setQuality(quality);
 
 function animate(now) {
   requestAnimationFrame(animate);

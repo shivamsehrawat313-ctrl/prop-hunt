@@ -26,16 +26,19 @@ Then open `http://localhost:3001`. `npm start` serves the built client, Socket.I
 - Aim with the mouse; click or press **Space** to strike as hunter.
 - Select a weapon with **1** (knife), **2** (pistol), or **3** (crossbow).
 - As a hider, use **E** near a matching pair of props to disguise; move with **WASD** to blend into the scene.
+- On touch screens, use the left joystick to move and the right hand buttons to choose your weapon or disguise, lock/unlock, and strike. Low-spec touch devices start on Low quality; quality can be changed in settings.
 - Ready up in the lobby; the host starts when everyone is ready.
 
 ## Tests
 
 ```sh
 npm run test:multiplayer
+npm test
 npm run build
 ```
 
 The multiplayer test starts a local server and connects headless Socket.IO players to exercise round timers, strikes, disguises, solo bots, catches, and hunter rotation.
+`npm test` also checks vision privacy, audio unlock and synthesis, and mobile control layout at 390x844 and 844x390.
 
 ## Deploy to Render
 

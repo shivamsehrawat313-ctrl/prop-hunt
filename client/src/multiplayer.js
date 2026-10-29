@@ -69,6 +69,7 @@ export class MultiplayerClient {
     const me = room.players.find((player) => player.id === this.socket.id);
     const inMatch = ['hide', 'hunt'].includes(room.phase);
     const inScore = ['scoreboard', 'final'].includes(room.phase);
+    document.querySelector('#game-shell').classList.toggle('in-match', inMatch);
     if (room.phase === 'lobby') {
       document.querySelector('#landing-screen').hidden = true;
       document.querySelector('#how-to-screen').hidden = true;
@@ -96,6 +97,13 @@ export class MultiplayerClient {
       document.querySelector('#lock-disguise').hidden = me?.role !== 'hider';
       document.querySelector('#lock-disguise').textContent = me?.locked ? 'Unlock disguise (E)' : 'Lock disguise (E)';
       document.querySelector('#strike-button').hidden = me?.role !== 'hunter' || room.phase !== 'hunt';
+      document.querySelector('#mobile-weapon').hidden = me?.role !== 'hunter' || room.phase !== 'hide';
+      document.querySelector('#mobile-disguise').hidden = me?.role !== 'hider';
+      document.querySelector('#mobile-lock').hidden = me?.role !== 'hider';
+      document.querySelector('#mobile-lock').textContent = me?.locked ? 'Unlock' : 'Lock';
+      document.querySelector('#mobile-weapon').textContent = document.querySelector('#weapon-select').value;
+      document.querySelector('#mobile-disguise').textContent = document.querySelector('#disguise-select').value;
+      document.querySelector('#mobile-strike').hidden = me?.role !== 'hunter' || room.phase !== 'hunt';
       this.onState(room, me);
     }
     if (inScore) {
