@@ -419,3 +419,10 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Rough: player visibility is not yet filtered server-side, gameplay audio and mobile controls remain for later phases, and production deployment setup is incomplete.
 - Next exact step: complete Phase B static deployment, README, and Render configuration; verify `npm run build` then `npm start`, `/health`, model/map/media serving, and the multiplayer bot suite.
 - Commands: `npm install`; `npm run test:multiplayer`; `npm run build`; `npm start`.
+
+## Phase B: production deployment — done
+
+- Added `npm start` for the production Node host and a Render Blueprint using `npm ci`, `npm run build`, `/health`, and `npm start`.
+- Reworked the README with local development, production run, controls, tests, and Render setup. The client and Socket.IO use one origin; the map and generated model/media assets are served with the built client.
+- Verification: `npm run build` and `npm run test:multiplayer` passed. Started the production server on `PORT=3107`; `/`, `/health`, `/maps/forest.json`, `/models/barrel-open.glb`, `/media/lobby.mp4`, and the Socket.IO polling handshake all returned HTTP 200. Stopped the server cleanly.
+- Next exact step: Phase C server-side visibility, line of sight, danger, and fog. Do not alter the finished world layout.
