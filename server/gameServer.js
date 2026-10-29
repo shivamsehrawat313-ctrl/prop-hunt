@@ -157,12 +157,12 @@ export function createGameService(io, {
       const dx = x - attacker.x; const dz = z - attacker.z; const distance = Math.hypot(dx, dz);
       if (distance > range) return;
       if (!hasLineOfSight(attacker, { x, z }, visionBlockers)) return;
-      if (weapon === 'knife') { candidates.push({ kind, id, distance, along: distance }); return; }
+      if (weapon === 'knife') { candidates.push({ kind, id, x, z, distance, along: distance }); return; }
       const along = dx * ax + dz * az;
       const perpendicular = Math.abs(dx * az - dz * ax);
       const angle = Math.acos(Math.max(-1, Math.min(1, along / (distance || 1))));
       const maxAngle = weapon === 'pistol' ? PISTOL_CONE_DEGREES * Math.PI / 360 : CROSSBOW_CONE_DEGREES * Math.PI / 360;
-      if (along >= 0 && perpendicular <= hitRadius && angle <= maxAngle) candidates.push({ kind, id, distance, along });
+      if (along >= 0 && perpendicular <= hitRadius && angle <= maxAngle) candidates.push({ kind, id, x, z, distance, along });
     };
     for (const decoy of room.decoys) addCandidate('decoy', decoy.id, decoy.x, decoy.z, PROP_STRIKE_RADIUS * decoy.scale);
     for (const target of room.players.values()) if (target.role === 'hider' && target.alive && target.connected) addCandidate('hider', target.id, target.x, target.z, PLAYER_HIT_RADIUS);
@@ -171,14 +171,16 @@ export function createGameService(io, {
     const caught = selected?.kind === 'hider' ? room.players.get(selected.id) : null;
     if (caught) { caught.caught = true; caught.alive = false; caught.input = { x: 0, z: 0 }; }
     if (weapon === 'pistol') room.hunterRevealedUntil = time + PISTOL_REVEAL_MS;
-    const strikeEvent = { attackerId: attacker.id, weapon, hit: Boolean(caught), targetType: selected?.kind || null, caughtId: caught?.id || null, strikes: room.strikes, revealedUntil: room.hunterRevealedUntil, aim: { x: ax, z: az } };
+    const strikeEvent = { weapon, hit: Boolean(caught), targetType: selected?.kind || null, caughtId: caught?.id || null, strikes: room.strikes, revealedUntil: room.hunterRevealedUntil };
     for (const recipient of room.players.values()) {
       if (!recipient.connected || recipient.isBot) continue;
       const socket = io.sockets.sockets.get(recipient.id);
       const maySeeLocation = recipient.id === attacker.id || (weapon === 'pistol' && recipient.role === 'hider' && Math.hypot(recipient.x - attacker.x, recipient.z - attacker.z) <= PISTOL_REVEAL_RADIUS);
+      const relativeX = attacker.x - recipient.x; const relativeZ = attacker.z - recipient.z; const soundDistance = Math.hypot(relativeX, relativeZ);
+      const sound = { distance: soundDistance, pan: Math.max(-1, Math.min(1, relativeX / Math.max(1, soundDistance))) };
       const privateEvent = recipient.id === attacker.id
-        ? { ...strikeEvent, at: { x: attacker.x, z: attacker.z } }
-        : { ...strikeEvent, attackerId: undefined, ...(maySeeLocation ? { at: { x: attacker.x, z: attacker.z } } : {}) };
+        ? { ...strikeEvent, attackerId: attacker.id, at: { x: attacker.x, z: attacker.z }, aim: { x: ax, z: az }, targetAt: selected ? { x: selected.x, z: selected.z } : null }
+        : { ...strikeEvent, sound, ...(maySeeLocation ? { at: { x: attacker.x, z: attacker.z }, aim: { x: ax, z: az } } : {}) };
       socket?.emit('game:strike', privateEvent);
     }
     if ([...room.players.values()].filter((player) => player.role === 'hider' && player.alive).length === 0) finishRound(room, 'hunter', time);

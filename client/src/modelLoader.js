@@ -1,12 +1,28 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { gradeModelMaterial } from './palette.js';
+import { AUDIO_MODEL_PROGRESS_EXPECTED_COUNT } from '../../shared/constants.js';
 
 const gltfLoader = new GLTFLoader();
 const modelCache = new Map();
 const distanceCulledMeshes = new Set();
 const INSTANCE_VIEW_DISTANCE = 48;
 const INSTANCE_VIEW_DISTANCE_SQ = INSTANCE_VIEW_DISTANCE * INSTANCE_VIEW_DISTANCE;
+let modelProgressHandler = null;
+const modelProgress = new Map();
+
+function reportModelProgress(fileName) {
+  if (!modelProgressHandler) return;
+  const completed = [...modelProgress.values()].filter((value) => value >= 1).length;
+  const weighted = [...modelProgress.values()].reduce((sum, value) => sum + value, 0);
+  const percent = Math.min(96, 4 + Math.round((weighted / AUDIO_MODEL_PROGRESS_EXPECTED_COUNT) * 92));
+  modelProgressHandler({ completed, expected: AUDIO_MODEL_PROGRESS_EXPECTED_COUNT, percent, fileName });
+}
+
+export function setModelLoadProgressHandler(handler) {
+  modelProgressHandler = handler;
+  if (handler) reportModelProgress('Preparing models');
+}
 
 function trackForDistanceCulling(instances, matrices) {
   instances.userData.distanceCullMatrices = matrices;
@@ -41,7 +57,12 @@ export function updateDistanceCulledInstances(playerPosition) {
 export async function loadModel(fileName) {
   if (!modelCache.has(fileName)) {
     const url = fileName.startsWith('/') ? fileName : `/models/${fileName}`;
-    modelCache.set(fileName, gltfLoader.loadAsync(url));
+    modelProgress.set(fileName, 0); reportModelProgress(fileName);
+    const request = gltfLoader.loadAsync(url, (event) => {
+      if (event.lengthComputable && event.total > 0) { modelProgress.set(fileName, Math.min(0.95, event.loaded / event.total)); reportModelProgress(fileName); }
+    }).then((gltf) => { modelProgress.set(fileName, 1); reportModelProgress(fileName); return gltf; })
+      .catch((error) => { modelProgress.set(fileName, 1); reportModelProgress(fileName); throw error; });
+    modelCache.set(fileName, request);
   }
   return modelCache.get(fileName);
 }

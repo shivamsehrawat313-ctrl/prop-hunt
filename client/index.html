@@ -10,6 +10,11 @@
   <body>
     <video id="lobby-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" src="/media/lobby.mp4"></video>
     <div id="lobby-fallback" aria-hidden="true"></div>
+    <section id="loading" class="loading" role="status" aria-live="polite">
+      <b>Preparing the forest</b>
+      <progress id="loading-progress" max="100" value="4" aria-label="Loading models"></progress>
+      <small><span id="loading-percent">4%</span> · <span id="loading-status">Loading forest models</span></small>
+    </section>
     <section id="landing-screen" class="front-screen">
       <form id="landing-card" class="front-card">
         <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
@@ -29,7 +34,7 @@
       </div>
     </section>
     <section id="how-to-screen" class="front-screen" hidden>
-      <div class="front-card"><p>Hiders get 10 seconds to hide. Disguise as a stump, boulder, or bush.</p><p>The hunter has 3 strikes. Choose a weapon, aim, and catch every hider.</p><p>Hiders win when time runs out or the hunter spends all strikes.</p><button id="how-to-close" type="button">Back</button></div>
+      <div class="front-card"><h2>How to play</h2><p>Hiders get 10 seconds to hide and disguise.</p><p>Lock beside two matching props; press E to unlock.</p><p>The hunter has 3 strikes: knife, pistol, or crossbow.</p><p>Move with WASD or arrow keys. Aim with the mouse.</p><p>Catch every hider to win; hiders win when time or strikes run out.</p><button id="how-to-close" type="button">Back</button></div>
     </section>
     <main id="game-shell" hidden>
       <canvas id="scene" aria-label="Shadow Hunt game view"></canvas>
@@ -70,7 +75,6 @@
       <div id="hunter-blackout" hidden>YOU ARE THE HUNTER<span>HIDERS ARE HIDING</span></div>
       <div id="danger-pulse" aria-hidden="true"></div>
       <section id="scoreboard-screen" class="front-screen" hidden><div class="front-card"><h2 id="round-result"></h2><ul id="scoreboard-list" class="player-list"></ul><button id="next-round" type="button">Next round</button><button id="new-match" type="button" hidden>New match</button></div></section>
-      <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Building the cabin, crops, camps and shore details</small></div>
       <div id="toast" class="toast" aria-live="polite"></div>
     </main>
     <script type="module" src="/src/main.js"></script>

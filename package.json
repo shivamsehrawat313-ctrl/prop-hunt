@@ -10,7 +10,8 @@
     "server": "node server/index.js",
     "test:multiplayer": "node tools/test-multiplayer.js",
     "test:vision": "node tools/test-vision.js",
-    "test": "npm run test:multiplayer && npm run test:vision"
+    "test:audio": "node tools/test-audio.js",
+    "test": "npm run test:multiplayer && npm run test:vision && npm run test:audio"
   },
   "dependencies": {
     "socket.io": "^4.8.1",

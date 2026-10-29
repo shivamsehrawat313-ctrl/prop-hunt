@@ -54,10 +54,10 @@ export class MultiplayerClient {
   validName() {
     const name = this.nameInput.value.trim();
     if (name.length < PLAYER_NAME_MIN_LENGTH || name.length > PLAYER_NAME_MAX_LENGTH) { this.errorNode.textContent = 'Enter your name'; this.nameInput.focus(); return null; }
-    localStorage.setItem('shadow-hunt-name', name); this.unlockAudio(); return name;
+    localStorage.setItem('shadow-hunt-name', name); return name;
   }
-  createRoom() { const name = this.validName(); if (name) this.socket.emit('room:create', { name }); }
-  joinRoom() { const name = this.validName(); if (!name) return; if (this.codeInput.value.length !== ROOM_CODE_LENGTH) { this.errorNode.textContent = 'Room not found'; return; } this.socket.emit('room:join', { name, code: this.codeInput.value }); }
+  createRoom() { this.unlockAudio(); const name = this.validName(); if (name) this.socket.emit('room:create', { name }); }
+  joinRoom() { this.unlockAudio(); const name = this.validName(); if (!name) return; if (this.codeInput.value.length !== ROOM_CODE_LENGTH) { this.errorNode.textContent = 'Room not found'; return; } this.socket.emit('room:join', { name, code: this.codeInput.value }); }
   setInput(input) { this.input = { ...this.input, x: input.x, z: input.z }; }
   setAim(aim) { this.input.aim = aim; }
   strike() { this.socket.emit('game:strike', { weapon: document.querySelector('#weapon-select').value, aim: this.input.aim }); }

@@ -13,14 +13,25 @@ import {
   CAMERA_FIELD_OF_VIEW_DEGREES,
   CAMERA_ZOOM,
   CATCH_SCREEN_SHAKE_MS,
+  AMBIENCE_UPDATE_INTERVAL_MS,
+  AUDIO_CAMPFIRE_HEARING_DISTANCE,
+  AUDIO_FOOTSTEP_INTERVAL_MS,
+  AUDIO_FOOTSTEP_WATER_INTERVAL_MS,
+  AUDIO_LOADING_STAGE_COMPLETE_MS,
+  AUDIO_MASTER_VOLUME_DEFAULT,
   HIDER_SIGHT_RADIUS,
   HUNTER_CLOSE_CIRCLE_RANGE,
   HUNTER_CONE_RANGE,
   HUNTER_VIEW_CONE_DEGREES,
   DISGUISE_TINT_STRENGTH,
   HIDER_DISGUISE_SPEED_FACTOR,
-  HEARTBEAT_INTERVALS_MS,
-  HEARTBEAT_PEAK_VOLUME,
+  IMPACT_PARTICLE_COUNT,
+  IMPACT_PARTICLE_GRAVITY,
+  IMPACT_PARTICLE_LIFETIME_MS,
+  IMPACT_PARTICLE_SPEED,
+  PISTOL_RANGE,
+  PISTOL_TRACER_DURATION_MS,
+  PISTOL_TRACER_OPACITY,
   PLAYER_HEIGHT_UNITS,
   REMOTE_INTERPOLATION_FACTOR,
   SERVER_POSITION_SNAP_THRESHOLD,
@@ -32,16 +43,22 @@ import {
   VISION_FOG_MIN_SCREEN_RADIUS_PX,
   VISION_FOG_OPACITY,
   VISION_FOG_REVEAL_RADIUS_UNITS,
+  AUDIO_RIVER_HEARING_DISTANCE,
 } from '../../shared/constants.js';
 import './style.css';
 import { MultiplayerClient } from './multiplayer.js';
-import { loadModel } from './modelLoader.js';
+import { loadModel, setModelLoadProgressHandler } from './modelLoader.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
+import { bridgeAt, distanceToRiverBank, waterDepth } from '../../shared/water.js';
+import { GameAudio } from './audio.js';
 
 const canvas = document.querySelector('#scene');
 const visionCanvas = document.querySelector('#vision-fog');
 const visionContext = visionCanvas.getContext('2d');
 const loading = document.querySelector('#loading');
+const loadingProgress = document.querySelector('#loading-progress');
+const loadingPercent = document.querySelector('#loading-percent');
+const loadingStatus = document.querySelector('#loading-status');
 const toast = document.querySelector('#toast');
 const zoneLabel = document.querySelector('#zone-label');
 const fpsReadout = document.querySelector('#fps');
@@ -76,8 +93,18 @@ player.add(playerRim);
 scene.add(player);
 
 let controls;
-let audioContext;
 let multiplayer;
+const gameAudio = new GameAudio();
+let previousRoomSnapshot = null;
+let lastFootstepAt = 0;
+let lastAmbienceUpdateAt = 0;
+let lastCountdownSecond = -1;
+const impactParticles = [];
+const pistolTracers = [];
+setModelLoadProgressHandler(({ percent, fileName }) => {
+  loadingProgress.value = percent; loadingPercent.textContent = `${percent}%`;
+  loadingStatus.textContent = fileName ? `Loading ${fileName.split('/').at(-1)}` : 'Loading forest models';
+});
 const playerViews = new Map();
 const disguiseModels = { stump: 'stump_squareDetailed.glb', boulder: 'rock_smallTopB.glb', bush: 'plant_bushDetailed.glb' };
 const disguiseTints = { stump: '#648177', boulder: '#718b89', bush: '#64836f' };
@@ -148,9 +175,26 @@ async function setPlayerView(snapshot, local = false) {
 }
 
 function applyRoomState(room, me) {
+  const previous = previousRoomSnapshot;
   myRole = me?.role || null;
   const visibleIds = new Set();
+  if (!previous && room.phase === 'lobby') gameAudio.lobbyJoin();
   if (['hide', 'hunt'].includes(room.phase)) resize();
+  if (['hide', 'hunt'].includes(room.phase)) gameAudio.startAmbience();
+  else if (previous && ['hide', 'hunt'].includes(previous.phase)) { gameAudio.heartbeat(0); gameAudio.stopAmbience(); }
+  if (me && previous) {
+    const oldMe = previous.players?.find((item) => item.id === me.id);
+    if (oldMe?.ready !== me.ready && me.ready) gameAudio.ready();
+    if (oldMe && (oldMe.disguise !== me.disguise || oldMe.locked !== me.locked)) gameAudio.rustle();
+    if (previous.phase !== room.phase && room.phase === 'hide') gameAudio.roleReveal(me.role);
+    if (previous.phase === 'hide' && room.phase === 'hunt') gameAudio.phaseSting('hunt');
+    if (room.phase === 'scoreboard' && previous.phase !== 'scoreboard') gameAudio.result((room.winner === 'hunter') === (me.role === 'hunter'));
+  }
+  if (room.phase === 'hunt') {
+    const seconds = Math.max(0, Math.ceil((room.phaseEndsAt - Date.now()) / 1000));
+    if (seconds <= 10 && seconds > 0 && seconds !== lastCountdownSecond) gameAudio.countdown();
+    lastCountdownSecond = seconds;
+  } else lastCountdownSecond = -1;
   if (controls && me) {
     controls.speedFactor = room.phase === 'hide' && me.role === 'hunter' ? 0 : me.role === 'hider' && me.disguise ? HIDER_DISGUISE_SPEED_FACTOR : 1;
     for (const other of room.players) { visibleIds.add(other.id); setPlayerView(other, other.id === me.id); }
@@ -161,16 +205,50 @@ function applyRoomState(room, me) {
     for (const [id, view] of playerViews) if (id !== me.id && !visibleIds.has(id)) { scene.remove(view.group); playerViews.delete(id); }
     const danger = document.querySelector('#danger-pulse');
     danger.dataset.level = String(me.role === 'hider' ? room.dangerLevel || 0 : 0);
-    setHeartbeat(me.role === 'hider' ? room.dangerLevel || 0 : 0);
+    gameAudio.heartbeat(me.role === 'hider' ? room.dangerLevel || 0 : 0);
   }
+  previousRoomSnapshot = room;
   if (import.meta.env.DEV) window.__multiplayerState = room;
 }
 
 function handleGameEvent(type, event) {
+  if (type === 'water-splash') { gameAudio.splash(0.08); return; }
   if (type === 'strike') {
+    const distance = event.sound?.distance || 0; const pan = event.sound?.pan || 0;
+    if (event.weapon === 'knife') gameAudio.knife();
+    else if (event.weapon === 'pistol') { gameAudio.gunshot({ distance, pan }); gameAudio.duckAmbience(); }
+    else if (event.weapon === 'crossbow') { gameAudio.crossbow(); gameAudio.reload(); }
+    if (event.hit) gameAudio.catchHit();
+    else gameAudio.wastedStrike();
+    if (event.strikes === 1) gameAudio.warning();
+    if (event.at && event.aim && event.weapon === 'pistol') spawnPistolTracer(event);
+    if (event.targetAt) spawnImpact(event.targetAt.x, event.targetAt.z, event.hit ? '#a9f7df' : '#b7a27c');
     if (event.hit) { document.querySelector('#game-shell').classList.add('game-shake'); setTimeout(() => document.querySelector('#game-shell').classList.remove('game-shake'), CATCH_SCREEN_SHAKE_MS); showToast('Hider caught'); }
     else showToast('Wasted strike');
   }
+}
+
+function spawnImpact(x, z, color = '#c9e7d9') {
+  const baseY = terrainHeightAt(x, z, map) + 0.16;
+  for (let index = 0; index < IMPACT_PARTICLE_COUNT; index += 1) {
+    const mesh = new THREE.Mesh(new THREE.TetrahedronGeometry(0.055, 0), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false }));
+    mesh.position.set(x, baseY, z); scene.add(mesh);
+    const angle = index / IMPACT_PARTICLE_COUNT * Math.PI * 2;
+    impactParticles.push({ mesh, vx: Math.cos(angle) * IMPACT_PARTICLE_SPEED, vy: IMPACT_PARTICLE_SPEED * (0.45 + Math.random() * 0.35), vz: Math.sin(angle) * IMPACT_PARTICLE_SPEED, expires: performance.now() + IMPACT_PARTICLE_LIFETIME_MS });
+  }
+}
+
+function spawnPistolTracer(event) {
+  const directionLength = Math.hypot(event.aim.x, event.aim.z) || 1;
+  const from = new THREE.Vector3(event.at.x, terrainHeightAt(event.at.x, event.at.z, map) + 0.72, event.at.z);
+  const endX = event.at.x + event.aim.x / directionLength * PISTOL_RANGE;
+  const endZ = event.at.z + event.aim.z / directionLength * PISTOL_RANGE;
+  const to = new THREE.Vector3(endX, terrainHeightAt(endX, endZ, map) + 0.28, endZ);
+  const geometry = new THREE.BufferGeometry().setFromPoints([from, to]);
+  const material = new THREE.LineBasicMaterial({ color: '#ffecac', transparent: true, opacity: PISTOL_TRACER_OPACITY, depthTest: true, depthWrite: false });
+  const line = new THREE.Line(geometry, material); line.frustumCulled = false; scene.add(line);
+  spawnImpact(endX, endZ, '#ffd990');
+  pistolTracers.push({ line, geometry, material, expires: performance.now() + PISTOL_TRACER_DURATION_MS });
 }
 
 multiplayer = new MultiplayerClient({
@@ -262,7 +340,19 @@ async function prepareScene() {
         showToast(`Entered ${name}`);
       },
     });
-    controls.onInput = (input) => multiplayer.setInput(input);
+    controls.onInput = (input) => {
+      multiplayer.setInput(input);
+      if (!input.x && !input.z) return;
+      const time = performance.now();
+      const depth = waterDepth(controls.position.x, controls.position.z, map);
+      const onBridge = bridgeAt(controls.position.x, controls.position.z, map);
+      const interval = depth > 0 && !onBridge ? AUDIO_FOOTSTEP_WATER_INTERVAL_MS : AUDIO_FOOTSTEP_INTERVAL_MS;
+      if (time - lastFootstepAt < interval) return;
+      const role = multiplayer.room?.players.find((item) => item.id === multiplayer.socket.id)?.role || 'hider';
+      if (depth > 0 && !onBridge) gameAudio.splash(role === 'hunter' ? 0.1 : 0.045);
+      else gameAudio.footstep(onBridge ? 'bridge' : distanceToPath(controls.position.x, controls.position.z) < map.paths.width * 0.52 ? 'dirt' : 'grass', role);
+      lastFootstepAt = time;
+    };
     controls.update(0);
     miniMap.draw({ x: map.spawn.x, y: map.spawn.y });
     if (import.meta.env.DEV) {
@@ -272,7 +362,8 @@ async function prepareScene() {
         miniMap.draw({ x, y: z });
       };
     }
-    loading.classList.add('hidden');
+    loadingProgress.value = 100; loadingPercent.textContent = '100%'; loadingStatus.textContent = 'Forest ready';
+    setTimeout(() => loading.classList.add('hidden'), AUDIO_LOADING_STAGE_COMPLETE_MS);
     showToast('Milestone 1C - cabin yard, camps and forest life ready');
   } catch (error) {
     console.error(error);
@@ -280,6 +371,17 @@ async function prepareScene() {
     if (import.meta.env.DEV) loading.querySelector('small').textContent = String(error?.message || error);
     loading.classList.add('error');
   }
+}
+
+function distanceToPath(x, z) {
+  let closest = Infinity;
+  const routes = Object.values(map.paths.edgeRoutes || {});
+  for (const route of routes) for (let i = 1; i < route.length; i += 1) {
+    const [ax, az] = route[i - 1]; const [bx, bz] = route[i];
+    const dx = bx - ax; const dz = bz - az; const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    closest = Math.min(closest, Math.hypot(x - ax - dx * t, z - az - dz * t));
+  }
+  return closest;
 }
 
 function setQuality(next) {
@@ -306,34 +408,23 @@ document.querySelector('#audio-unlock').addEventListener('click', async (event) 
   event.currentTarget.textContent = 'AUDIO READY';
   event.currentTarget.classList.add('unlocked');
 });
+const muteButton = document.querySelector('#mute-button');
+const volumeSlider = document.querySelector('#master-volume');
+volumeSlider.value = String(gameAudio.volume ?? AUDIO_MASTER_VOLUME_DEFAULT);
+muteButton.textContent = gameAudio.muted ? 'Unmute' : 'Mute';
+muteButton.addEventListener('click', () => { const muted = gameAudio.toggleMute(); muteButton.textContent = muted ? 'Unmute' : 'Mute'; });
+volumeSlider.addEventListener('input', () => gameAudio.setVolume(volumeSlider.value));
+document.addEventListener('click', (event) => {
+  if (gameAudio.unlocked && event.target.closest('button')) gameAudio.button();
+});
 
 async function unlockAudio() {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return;
-  audioContext ||= new AudioContextClass();
-  if (audioContext.state !== 'running') await audioContext.resume();
-  setHeartbeat(heartbeatLevel);
-}
-
-function heartbeatThump(delaySeconds, frequency, peak) {
-  if (!audioContext || audioContext.state !== 'running') return;
-  const start = audioContext.currentTime + delaySeconds;
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency, start);
-  gain.gain.setValueAtTime(0.001, start); gain.gain.linearRampToValueAtTime(peak, start + 0.025); gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
-  oscillator.connect(gain); gain.connect(audioContext.destination); oscillator.start(start); oscillator.stop(start + 0.19);
-}
-
-function setHeartbeat(level) {
-  const nextLevel = Math.max(0, Math.min(3, Math.floor(level || 0)));
-  if (nextLevel === heartbeatLevel && (nextLevel === 0 || heartbeatTimer)) return;
-  heartbeatLevel = nextLevel;
-  clearInterval(heartbeatTimer); heartbeatTimer = null;
-  if (heartbeatLevel === 0 || !audioContext || audioContext.state !== 'running') return;
-  const interval = HEARTBEAT_INTERVALS_MS[heartbeatLevel];
-  const beat = () => { heartbeatThump(0, 58, HEARTBEAT_PEAK_VOLUME * heartbeatLevel / 3); heartbeatThump(0.16, 48, HEARTBEAT_PEAK_VOLUME * heartbeatLevel / 3); };
-  beat(); heartbeatTimer = setInterval(beat, interval);
+  const unlocked = await gameAudio.unlock();
+  if (unlocked) {
+    document.querySelector('#mute-button').textContent = gameAudio.muted ? 'Unmute' : 'Mute';
+    document.querySelector('#master-volume').value = String(gameAudio.volume);
+    gameAudio.heartbeat(previousRoomSnapshot?.dangerLevel || 0);
+  }
 }
 
 const aimRaycaster = new THREE.Raycaster();
@@ -365,6 +456,25 @@ function animate(now) {
     view.group.position.y = terrainHeightAt(view.group.position.x, view.group.position.z, map);
   }
   environment?.update(player.position, now / 1000);
+  const inGameplay = ['hide', 'hunt'].includes(multiplayer.room?.phase);
+  if (controls && inGameplay && now - lastAmbienceUpdateAt >= AMBIENCE_UPDATE_INTERVAL_MS) {
+    const riverDistance = distanceToRiverBank(controls.position.x, controls.position.z, map);
+    const campfireDistance = Math.min(Infinity, ...WORLD_COLLIDERS.filter((collider) => collider.type === 'campfire').map((collider) => Math.hypot(collider.x - controls.position.x, collider.z - controls.position.z)));
+    gameAudio.updateAmbience({ river: Math.max(0, 1 - riverDistance / AUDIO_RIVER_HEARING_DISTANCE), campfire: Math.max(0, 1 - campfireDistance / AUDIO_CAMPFIRE_HEARING_DISTANCE) });
+    lastAmbienceUpdateAt = now;
+  } else if (!inGameplay && gameAudio.ambience) gameAudio.stopAmbience();
+  for (let index = impactParticles.length - 1; index >= 0; index -= 1) {
+    const particle = impactParticles[index];
+    if (now >= particle.expires) { scene.remove(particle.mesh); particle.mesh.geometry.dispose(); particle.mesh.material.dispose(); impactParticles.splice(index, 1); continue; }
+    const dt = delta;
+    particle.mesh.position.x += particle.vx * dt; particle.mesh.position.y += particle.vy * dt; particle.mesh.position.z += particle.vz * dt;
+    particle.vy -= IMPACT_PARTICLE_GRAVITY * dt; particle.mesh.material.opacity = Math.max(0, (particle.expires - now) / IMPACT_PARTICLE_LIFETIME_MS);
+  }
+  for (let index = pistolTracers.length - 1; index >= 0; index -= 1) {
+    const tracer = pistolTracers[index];
+    if (now >= tracer.expires) { scene.remove(tracer.line); tracer.geometry.dispose(); tracer.material.dispose(); pistolTracers.splice(index, 1); continue; }
+    tracer.material.opacity = PISTOL_TRACER_OPACITY * (tracer.expires - now) / PISTOL_TRACER_DURATION_MS;
+  }
   if (now - lastVisionDraw >= VISION_FOG_DRAW_INTERVAL_MS) { drawVisionFog(); lastVisionDraw = now; }
   river.update(now / 1000);
   renderer.render(scene, camera);
@@ -422,5 +532,5 @@ prepareScene();
 
 window.addEventListener('beforeunload', () => {
   controls?.dispose();
-  audioContext?.close();
+  gameAudio.dispose();
 });

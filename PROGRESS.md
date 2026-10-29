@@ -439,3 +439,12 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Rough: heartbeats currently use a simple synthesized double pulse and will be integrated with the full Phase D audio system. Full client visual tuning remains unmeasured; the map and its layout were untouched.
 - Next exact step: Phase D synthesized gameplay audio, model loading progress, short how-to, and hit/tracer effects.
 - Commands: `npm test`; `npm run build`; `npm start`.
+
+## Phase D: audio and feedback — done
+
+- Added a gesture-gated Web Audio system with persistent mute/volume, capped voices, synthesized gameplay/UI sounds, surface footsteps, spatialized weapon fire, heartbeat and proximity-faded river/campfire ambience. Create/Join unlock audio on the first tap; ambience runs only during active rounds and ducks around urgent sounds.
+- Added asset loading progress over the lobby video, a concise how-to, catch/strike particles, pistol tracer feedback, and named tuning constants. Server strike messages reveal position only to permitted viewers while sending non-positional spatial audio data to nearby hiders.
+- Tests: `npm test` passed multiplayer, vision, and audio suites. `npm run build` passed; Vite reports the large-chunk advisory. `git diff --check` passed (line-ending notices only).
+- Rough: no separate lobby poster image is present in `client/public/media`, so video is preloaded without a poster. Browser art tuning was not completed beyond the requested smoke check.
+- Next exact step: Phase E touch joystick/buttons, responsive portrait and landscape layout, low-end mobile quality default, and scripted 390x844 / 844x390 checks.
+- Commands: `npm test`; `npm run build`; `npm start`.

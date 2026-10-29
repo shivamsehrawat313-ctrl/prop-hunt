@@ -48,7 +48,11 @@ button { font: inherit; cursor: pointer; }
 .audio-button { display: block; width: 100%; margin-top: 8px; color: #d8fff2; border-color: rgba(85, 217, 188, .27); }
 .audio-button.unlocked { color: #86e2c9; }
 
-.loading { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #e5fff1; background: radial-gradient(ellipse at center, rgba(20, 60, 55, .84), rgba(8, 27, 27, .91)); transition: opacity .5s ease, visibility .5s ease; }
+.loading { position: fixed; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #e5fff1; background: rgba(6, 24, 25, .72); transition: opacity .5s ease, visibility .5s ease; }
+.loading progress { width: min(260px, 70vw); height: 8px; appearance: none; border: 1px solid rgba(169, 247, 223, .28); border-radius: 6px; overflow: hidden; background: rgba(4, 18, 19, .75); }
+.loading progress::-webkit-progress-bar { background: rgba(4, 18, 19, .75); }
+.loading progress::-webkit-progress-value { background: linear-gradient(90deg, #278f83, #a9f7df); border-radius: 6px; }
+.loading small { color: #9acfc0; font: 10px 'DM Mono', monospace; }
 .loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 .loading b { font-size: 15px; letter-spacing: .06em; }
 .loading small { color: #9acfc0; font: 10px 'DM Mono', monospace; }
