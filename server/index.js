@@ -1,46 +1,15 @@
-import { createServer } from "node:http";
-import { Server } from "socket.io";
-import { isInWater, waterDepth } from "../shared/water.js";
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createGameServer } from './gameServer.js';
 
-const port = Number(process.env.PORT || 3001);
-const httpServer = createServer((request, response) => {
-  const url = new URL(
-    request.url || "/",
-    `http://${request.headers.host || "localhost"}`,
-  );
-  if (request.url === "/health") {
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify({ ok: true, game: "shadow-hunt" }));
-    return;
-  }
-  if (url.pathname === "/water") {
-    const x = Number(url.searchParams.get("x"));
-    const z = Number(url.searchParams.get("z"));
-    if (!Number.isFinite(x) || !Number.isFinite(z)) {
-      response.writeHead(400, { "content-type": "application/json" });
-      response.end(
-        JSON.stringify({ error: "Provide numeric x and z query values." }),
-      );
-      return;
-    }
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(
-      JSON.stringify({
-        isInWater: isInWater(x, z),
-        waterDepth: waterDepth(x, z),
-      }),
-    );
-    return;
-  }
-  response.writeHead(404);
-  response.end("Socket.IO server ready");
-});
+export { createGameServer };
 
-const io = new Server(httpServer, { cors: { origin: "*" } });
-io.on("connection", (socket) => {
-  socket.emit("server:ready", { stage: "milestone-1A" });
-});
-
-httpServer.listen(port, "0.0.0.0", () => {
-  console.log(`Shadow Hunt Socket.IO server listening on ${port}`);
-});
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const port = Number(process.env.PORT || 3000);
+  const game = createGameServer({ port, host: '0.0.0.0' });
+  game.listen().then((actualPort) => console.log(`Shadow Hunt server listening on ${actualPort}`))
+    .catch((error) => { console.error('Could not start Shadow Hunt server:', error); process.exitCode = 1; });
+  process.on('SIGINT', () => game.close().finally(() => process.exit(0)));
+  process.on('SIGTERM', () => game.close().finally(() => process.exit(0)));
+}

@@ -408,3 +408,13 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Browser console errors: 0.
 - FPS: 60; draw calls: 100.
 - Placement removals: 0; 1C clearance removals: 0.
+
+## Milestone 2: rooms, lobby, and live sync — done
+
+- Kept the existing map, terrain rendering, river/bridges/paths/props, camera, minimap, quality toggle, and WASD controls. Removed the lobby video and `client/public/media/lobby.mp4`, plus the audio-unlock control/code. This checkout had no partial room/gameplay implementation; replaced the Socket.IO connection stub with M2 room/session logic.
+- Added four-letter rooms, 6-player capacity, ready/start/leave flow, host promotion, 30-second same-name reconnect slots, empty-room cleanup, and a single authoritative 20 Hz loop. The server serves the built client on `PORT` (default 3000) and public assets.
+- Added shared client/server movement, water speed, terrain height, collision circles and safe spawn selection. The client predicts its own movement, reconciles server positions, interpolates remote players 100 ms behind, labels and colors players, updates minimap dots, and shows ping/snapshot rate with F3. `?bots=2` adds two wandering test clients.
+- Added `shared/worldColliders.json` by exporting the existing seeded renderer’s 518 collision circles; client and server use the same data. Map, terrain layout, river, bridges, paths, props, models, and colors were not edited.
+- Verification: `npm test` passed the Milestone 2 Socket.IO script (including three-client sync, ready gating, safe spawn checks, wrong code, 7th-player/full rejection, started-room rejection, speed hack, 20 Hz snapshots, host promotion/rejoin, bots, and empty-room deletion). `npm run build` passed. `npm start` served `/`, `/health`, `/models/character-l.glb`, and the built CSS with HTTP 200; the removed `/media/lobby.mp4` route returned 404 as intended.
+- Rough: prediction has no per-input acknowledgements, remote interpolation does not extrapolate, and bots use simple random wandering.
+- Run commands: `npm install`; `npm run dev` (open `http://localhost:5173`); production `npm run build` then `npm start` (open `http://localhost:3000`); `npm test`.

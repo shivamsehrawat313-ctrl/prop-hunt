@@ -5,36 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#102c2a" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Shadow Hunt — Pine Hollow</title>
+    <title>Shadow Hunt</title>
   </head>
   <body>
-    <main id="game-shell">
+    <section id="landing-screen" class="screen">
+      <form id="landing-card" class="panel" novalidate>
+        <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
+        <button id="create-room" type="submit">Create Room</button>
+        <div class="or-divider"><span>or</span></div>
+        <div class="join-row"><input id="room-code-input" maxlength="4" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code" /><button id="join-room" type="button">Join</button></div>
+        <p id="lobby-error" role="alert" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="lobby-screen" class="screen" hidden>
+      <div class="panel lobby-card">
+        <div id="room-code" class="room-code"></div>
+        <div class="copy-row"><button id="copy-code" type="button">Copy code</button><button id="copy-link" type="button">Copy link</button></div>
+        <ul id="player-list" class="player-list" aria-label="Players in room"></ul>
+        <div class="lobby-actions"><button id="ready-button" type="button">Ready</button><button id="start-button" type="button" disabled>Start</button></div>
+        <button id="leave-room" class="quiet-button" type="button">Leave</button>
+      </div>
+    </section>
+
+    <main id="game-shell" hidden>
       <canvas id="scene" aria-label="Shadow Hunt game view"></canvas>
       <section class="hud hud-top-left" aria-label="Game status">
-        <div class="brand">SHADOW HUNT <span>FIELD TEST · 1C</span></div>
+        <div class="brand">SHADOW HUNT</div>
         <div id="zone-label" class="zone-label">PINE HOLLOW</div>
         <div class="coord-label">Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys</div>
       </section>
       <section class="hud minimap-frame" aria-label="Map">
-        <canvas id="minimap" width="240" height="120"></canvas>
-        <span>FOREST OVERVIEW</span>
+        <canvas id="minimap" width="240" height="120"></canvas><span>FOREST OVERVIEW</span>
       </section>
-      <section class="hud debug-panel" aria-label="Performance">
-        <div>FPS <b id="fps">—</b></div>
-        <div>DRAW CALLS <b id="draw-calls">—</b></div>
-        <div>QUALITY <b id="quality-label">HIGH</b></div>
-        <div id="world-scale" class="world-scale" aria-label="World scale"></div>
+      <section id="debug-panel" class="hud debug-panel" hidden aria-label="Network and performance">
+        <div>FPS <b id="fps">—</b></div><div>DRAW CALLS <b id="draw-calls">—</b></div><div>QUALITY <b id="quality-label">HIGH</b></div>
+        <div id="world-scale" class="world-scale"></div><div id="network-debug">PING — ms · SNAPSHOTS — Hz</div>
       </section>
-      <section class="hud controls-panel" aria-label="Display and audio controls">
-        <div class="quality-row">
-          <span>QUALITY</span>
-          <button data-quality="high" class="quality-button active">HIGH</button>
-          <button data-quality="medium" class="quality-button">MED</button>
-          <button data-quality="low" class="quality-button">LOW</button>
-        </div>
-        <button id="audio-unlock" class="audio-button">UNLOCK AUDIO</button>
+      <section class="hud controls-panel" aria-label="Display controls">
+        <div class="quality-row"><span>QUALITY</span><button data-quality="high" class="quality-button active">HIGH</button><button data-quality="medium" class="quality-button">MED</button><button data-quality="low" class="quality-button">LOW</button></div>
       </section>
-      <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Building the cabin, crops, camps and shore details</small></div>
+      <button id="leave-game" class="hud leave-game" type="button">Leave room</button>
+      <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Loading the world for play</small></div>
       <div id="toast" class="toast" aria-live="polite"></div>
     </main>
     <script type="module" src="/src/main.js"></script>

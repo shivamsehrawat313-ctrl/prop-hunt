@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { DEEP_CHANNEL_THRESHOLD, DEEP_WATER_SPEED_FACTOR, LAND_MOVE_SPEED, SHALLOW_WATER_SPEED_FACTOR, bridgeAt, waterDepth } from '../../shared/water.js';
-import { CAMERA_DISTANCE, CAMERA_REFERENCE_HEIGHT, CAMERA_TILT_DEGREES } from '../../shared/constants.js';
+import { bridgeAt, waterDepth } from '../../shared/water.js';
+import { movePlayer } from '../../shared/movement.js';
+import { CAMERA_DISTANCE, CAMERA_REFERENCE_HEIGHT, CAMERA_TILT_DEGREES, PLAYER_MAX_SPEED, PLAYER_POSITION_CORRECTION_THRESHOLD } from '../../shared/constants.js';
 import { terrainHeightAt } from './terrain.js';
 
 const KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
@@ -15,7 +16,9 @@ export class PlayerControls {
     this.colliders = colliders;
     this.keys = new Set();
     this.position = new THREE.Vector3(map.spawn.x, 0, map.spawn.y);
-    this.speed = LAND_MOVE_SPEED;
+    this.speed = PLAYER_MAX_SPEED;
+    this.enabled = false;
+    this.onInput = null;
     this.cameraTiltRadians = THREE.MathUtils.degToRad(CAMERA_TILT_DEGREES);
     this.zoneId = 'A';
     this.boundDown = (event) => {
@@ -28,21 +31,15 @@ export class PlayerControls {
   }
 
   update(delta) {
-    const dx = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
-    const dz = (this.keys.has('s') || this.keys.has('arrowdown') ? 1 : 0) - (this.keys.has('w') || this.keys.has('arrowup') ? 1 : 0);
+    const dx = this.enabled ? (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0) : 0;
+    const dz = this.enabled ? (this.keys.has('s') || this.keys.has('arrowdown') ? 1 : 0) - (this.keys.has('w') || this.keys.has('arrowup') ? 1 : 0) : 0;
     const length = Math.hypot(dx, dz);
     if (length > 0) {
-      const bridge = bridgeAt(this.position.x, this.position.z, this.map);
-      const depth = waterDepth(this.position.x, this.position.z, this.map);
-      const speedFactor = bridge ? 1 : depth === 0 ? 1 : depth >= DEEP_CHANNEL_THRESHOLD ? DEEP_WATER_SPEED_FACTOR : SHALLOW_WATER_SPEED_FACTOR;
-      const stepX = (dx / length) * this.speed * speedFactor * delta;
-      const stepZ = (dz / length) * this.speed * speedFactor * delta;
-      const nextX = THREE.MathUtils.clamp(this.position.x + stepX, this.map.bounds.minX + 1, this.map.bounds.maxX - 1);
-      const nextZ = THREE.MathUtils.clamp(this.position.z + stepZ, this.map.bounds.minY + 1, this.map.bounds.maxY - 1);
-      if (this.canOccupy(nextX, this.position.z)) this.position.x = nextX;
-      if (this.canOccupy(this.position.x, nextZ)) this.position.z = nextZ;
+      const moved = movePlayer(this.position, { x: dx, z: dz }, delta, { map: this.map, colliders: this.colliders, speed: this.speed });
+      this.position.x = moved.x; this.position.z = moved.z;
       this.player.rotation.y = Math.atan2(-dx, -dz);
     }
+    this.onInput?.({ x: dx, z: dz });
     this.position.y = terrainHeightAt(this.position.x, this.position.z, this.map);
     const depth = waterDepth(this.position.x, this.position.z, this.map);
     this.waterEffects.update(this.position, depth, Boolean(bridgeAt(this.position.x, this.position.z, this.map)), length > 0, delta);
@@ -64,9 +61,14 @@ export class PlayerControls {
     }
   }
 
-  canOccupy(x, z) {
-    const playerRadius = 0.22;
-    return !this.colliders.some((circle) => Math.hypot(x - circle.x, z - circle.z) < playerRadius + circle.radius);
+  reconcile(x, z) {
+    const error = Math.hypot(x - this.position.x, z - this.position.z);
+    if (error > PLAYER_POSITION_CORRECTION_THRESHOLD) {
+      this.position.x = x; this.position.z = z;
+    } else {
+      this.position.x += (x - this.position.x) * 0.2;
+      this.position.z += (z - this.position.z) * 0.2;
+    }
   }
 
   dispose() {

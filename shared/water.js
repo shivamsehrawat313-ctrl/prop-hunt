@@ -1,9 +1,7 @@
 import forest from './map.js';
+import { DEEP_CHANNEL_THRESHOLD, DEEP_WATER_SPEED_FACTOR, PLAYER_MAX_SPEED, SHALLOW_WATER_SPEED_FACTOR } from './constants.js';
 
-export const LAND_MOVE_SPEED = 7.2;
-export const SHALLOW_WATER_SPEED_FACTOR = 0.65;
-export const DEEP_WATER_SPEED_FACTOR = 0.45;
-export const DEEP_CHANNEL_THRESHOLD = 0.58;
+export const LAND_MOVE_SPEED = PLAYER_MAX_SPEED;
 
 function lerp(a, b, t) {
   return a + (b - a) * t;

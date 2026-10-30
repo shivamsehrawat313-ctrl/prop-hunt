@@ -7,7 +7,7 @@ export class MiniMap {
     this.map = map;
   }
 
-  draw(player) {
+  draw(player, others = []) {
     const ctx = this.ctx;
     const { width, height } = this.canvas;
     const mapWidth = this.map.bounds.maxX - this.map.bounds.minX;
@@ -49,5 +49,10 @@ export class MiniMap {
     ctx.fillStyle = '#effff4'; ctx.fill();
     ctx.strokeStyle = '#54e8d4'; ctx.lineWidth = 1;
     ctx.stroke();
+    for (const other of others) {
+      ctx.beginPath(); ctx.arc(mx(other.x), my(other.z), 2.15, 0, Math.PI * 2);
+      ctx.fillStyle = other.color || '#f6ce72'; ctx.fill();
+      ctx.strokeStyle = 'rgba(3, 20, 22, .9)'; ctx.lineWidth = 0.8; ctx.stroke();
+    }
   }
 }

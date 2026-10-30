@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { palette } from './palette.js';
 import { getPathPolylines } from './paths.js';
+import { terrainHeightAt as sharedTerrainHeightAt } from '../../shared/terrain.js';
 import {
   GROUND_PATCH_BLEND_WIDTH,
   GROUND_PATCH_COVERAGE,
@@ -151,15 +152,7 @@ export function measureGroundPatchCoverage(map, step = 0.45) {
   const aggregate = Object.fromEntries(['green', 'olive', 'freshGreen', 'ochre'].map((key) => [key, Number((Object.values(counts).reduce((sum, row) => sum + row[key], 0) * 100 / total).toFixed(1))]));
   return { overall: aggregate, byZone: Object.fromEntries(Object.entries(counts).map(([id, row]) => [id, format(row)])), sampleStep: step };
 }
-export function terrainHeightAt(x, z, map, pathLines = null) {
-  pathLines ||= pathCache.get(map) || getPathPolylines(map);
-  if (!pathCache.has(map)) pathCache.set(map, pathLines);
-  const zoneC = THREE.MathUtils.smoothstep(x, map.zones[2].minX + 4, map.zones[2].minX + 35);
-  const broad = valueNoise(x / MAP_SCALE * 0.022, z / MAP_SCALE * 0.022) * 0.30;
-  const detail = valueNoise(x / MAP_SCALE * 0.065 + 17, z / MAP_SCALE * 0.065 - 9) * 0.20;
-  const undulation = (broad + detail) * (1 - zoneC * 0.82);
-  return undulation * (1 - flattenWeight(x, z, map, pathLines));
-}
+export function terrainHeightAt(x, z, map) { return sharedTerrainHeightAt(x, z, map); }
 
 export function createTerrain(map) {
   const { minX, minY, maxX, maxY } = map.bounds;

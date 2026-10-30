@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "concurrently -k -n client,server -c cyan,magenta \"vite --config vite.config.js --configLoader runner\" \"node server/index.js\"",
     "build": "vite build --config vite.config.js --configLoader runner",
+    "start": "node server/index.js",
     "preview": "vite preview --config vite.config.js --configLoader runner",
-    "server": "node server/index.js"
+    "server": "node server/index.js",
+    "test:milestone2": "node tools/test-milestone2.js",
+    "test": "npm run test:milestone2"
   },
   "dependencies": {
     "socket.io": "^4.8.1",
@@ -14,6 +17,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "socket.io-client": "^4.8.4",
     "vite": "^7.1.7"
   }
 }
