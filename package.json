@@ -9,7 +9,8 @@
     "preview": "vite preview --config vite.config.js --configLoader runner",
     "server": "node server/index.js",
     "test:milestone2": "node tools/test-milestone2.js",
-    "test": "npm run test:milestone2"
+    "test:milestone3": "node tools/test-milestone3.js",
+    "test": "node tools/test-milestone3.js"
   },
   "dependencies": {
     "socket.io": "^4.8.1",

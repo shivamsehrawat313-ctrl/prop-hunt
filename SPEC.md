@@ -42,7 +42,7 @@ Keep a connected, data-driven graph in `/maps/forest.json`, linking all zones wi
 
 Use deliberate groups (groves, 3-6-rock clusters, log piles, reed beds, crop rows, tent rows), not isolated random scatter. Use fixed-seed randomness. Reject placements that overlap paths, the river, other objects, or map edges. Report placed and rejected counts by zone/type.
 
-Provide at least 50 each of stump, boulder, and bush hider props across the zones. Disguised hiders and decoys must use the same exact model, scale range (0.9-1.1), and material, with small color variation. Decorative items must be visually distinct from these three hider types. The shared bush model is `plant_bushDetailed.glb`; `grass_large.glb` is grass and must never be used as a bush. No large-rock GLB is supplied, so use one selected small faceted rock model scaled 2-3x for every boulder decoy/disguise.
+Provide at least 50 each of stump, boulder, and bush hider props across the zones. For the current multiplayer round, only hider players become prop disguises; do not scatter separate prop decoys across the map. Preserve the supplied prop models' original colors and size them to blend with the player and nearby nature. Decorative items must be visually distinct from the stump, boulder, and bush hider props. The shared bush model is `plant_bushDetailed.glb`; `grass_large.glb` is grass and must never be used as a bush. No large-rock GLB is supplied, so use one selected small faceted rock model scaled 2-3x for every boulder disguise.
 
 Use simple invisible circle/box collisions for trunks, rocks, tents, cabin, and fence segments. Canopies and bridges have no collision. Water is always traversable; crossing the river never requires a bridge.
 

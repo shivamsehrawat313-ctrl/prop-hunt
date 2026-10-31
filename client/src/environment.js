@@ -4,11 +4,21 @@ import { PlacementValidator } from './placementValidator.js';
 import { terrainHeightAt } from './terrain.js';
 import { createMilestone1C, getMilestone1CClearings } from './milestone1c.js';
 import { MAP_SCALE, TREE_KEEP_RATIO } from '../../shared/constants.js';
+import { PROP_TYPES } from '../../shared/propTypes.js';
+import { PROP_DECOY_SCALE_MIN, PROP_DECOY_SCALE_MAX, PROP_MODEL_SIZE_MULTIPLIERS, PROP_MODEL_TARGET_WIDTH } from '../../shared/constants.js';
 
 const HIDER_MODELS = {
   hiderBushes: 'plant_bushDetailed.glb',
   hiderStumps: 'stump_squareDetailed.glb',
   hiderBoulders: 'rock_smallTopB.glb',
+};
+const DISGUISE_COLORS = {
+  barrel: '#d84c3e',
+  box: '#b77b5d',
+  bucket: '#7780a4',
+  rock: '#b68b6b',
+  tent: '#df4c52',
+  cart: '#9d784d',
 };
 
 const ZONE_CONFIG = {
@@ -42,9 +52,9 @@ const HIDER_COUNTS = { A: 20, B: 20, C: 18 };
 const HIDER_STUMP_COUNTS = { A: 27, B: 27, C: 24 };
 const HIDER_SCALE = { min: 0.9, max: 1.1 };
 const OBJECT_TINT = {
-  hiderBushes: '#64836f',
-  hiderStumps: '#648177',
-  hiderBoulders: '#718b89',
+  hiderBushes: '#628653',
+  hiderStumps: '#76533a',
+  hiderBoulders: '#918573',
   rocks: '#7b9290',
   logs: '#647a73',
   deadTrunks: '#657b77',
@@ -512,6 +522,7 @@ export async function createEnvironment(map, river, scene) {
   const modelNames = new Set([
     ...Object.values(ZONE_CONFIG).flatMap((config) => config.treeModels),
     ...Object.values(HIDER_MODELS),
+    ...PROP_TYPES.map((prop) => prop.model),
     'rock_smallH.glb', 'rock_smallI.glb', 'stone_tallC.glb',
     'tree-log.glb', 'tree-log-small.glb', 'tree-trunk.glb',
     'crops_dirtRow.glb',
@@ -595,7 +606,8 @@ export async function createEnvironment(map, river, scene) {
   const typeConfigs = [
     {
       type: 'hiderBoulders', model: HIDER_MODELS.hiderBoulders, targets: HIDER_COUNTS,
-      baseScale: 2.5, footprintRadius: 0.86, collisionRadius: 0.8, shadowWidth: 2.9, shadowDepth: 2.35,
+      baseScale: 1.1 / Math.max(0.001, scaleInfo[HIDER_MODELS.hiderBoulders].width),
+      footprintRadius: 0.55, collisionRadius: 0.5, shadowWidth: 1.45, shadowDepth: 1.2,
       anchor: (zone) => zone.id === 'B' ? boulderAnchor : null,
     },
     {
@@ -805,5 +817,26 @@ export async function createEnvironment(map, river, scene) {
     milestone1C.update(time);
   }
 
-  return { colliders, update, toggleHiderHighlights, placementReport, reedCount: reedBeds.count, setQuality(level) { groundPlants.setQuality(level); milestone1C.setQuality(level); } };
+  async function createDisguiseVisual(type, variation = 1) {
+    const prop = PROP_TYPES.find((item) => item.id === type);
+    if (!prop) return null;
+    const gltf = await loadModel(prop.model);
+    const visual = gltf.scene.clone(true);
+    visual.traverse((object) => {
+      if (!object.isMesh) return;
+      const color = DISGUISE_COLORS[type];
+      const cloneMaterial = (material) => { const clone = material.clone(); if (clone.color && color) clone.color.set(color); clone.needsUpdate = true; return clone; };
+      object.material = Array.isArray(object.material) ? object.material.map(cloneMaterial) : cloneMaterial(object.material);
+      object.castShadow = true;
+      object.receiveShadow = true;
+    });
+    visual.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(visual);
+    const width = Math.max(bounds.getSize(new THREE.Vector3()).x, bounds.getSize(new THREE.Vector3()).z, 0.001);
+    const normalizedScale = PROP_MODEL_TARGET_WIDTH * (PROP_MODEL_SIZE_MULTIPLIERS[type] || 1) / width * Math.max(PROP_DECOY_SCALE_MIN, Math.min(PROP_DECOY_SCALE_MAX, variation));
+    visual.scale.setScalar(normalizedScale);
+    visual.position.y = -bounds.min.y * normalizedScale;
+    return visual;
+  }
+  return { colliders, update, toggleHiderHighlights, placementReport, createDisguiseVisual, reedCount: reedBeds.count, setQuality(level) { groundPlants.setQuality(level); milestone1C.setQuality(level); } };
 }

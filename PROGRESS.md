@@ -418,3 +418,11 @@ Validation nudges: 344; boats repositioned to valid shore points: 7. No objects 
 - Verification: `npm test` passed the Milestone 2 Socket.IO script (including three-client sync, ready gating, safe spawn checks, wrong code, 7th-player/full rejection, started-room rejection, speed hack, 20 Hz snapshots, host promotion/rejoin, bots, and empty-room deletion). `npm run build` passed. `npm start` served `/`, `/health`, `/models/character-l.glb`, and the built CSS with HTTP 200; the removed `/media/lobby.mp4` route returned 404 as intended.
 - Rough: prediction has no per-input acknowledgements, remote interpolation does not extrapolate, and bots use simple random wandering.
 - Run commands: `npm install`; `npm run dev` (open `http://localhost:5173`); production `npm run build` then `npm start` (open `http://localhost:3000`); `npm test`.
+
+## Milestone 3 final lean: roles, prop disguises, knife, rounds — done
+
+- Audited the model folder: `client/public/models/props` does not exist. Used all six GLB models in `client/public/props models&preview img`: barrel, open box, bucket, sandstone, open tent, and cart. The cart has no matching preview image; its picker button is text-only. Each type is normalized to about 1.4 units and has 30 validator-placed instanced decoys; original materials are preserved. Existing stump, boulder, and bush scenery remains.
+- Added 30-second hide and 180-second hunt phases, random per-round hunter roles, unique first-come prop picks, automatic free-prop assignment, cluster locks, 70% disguised speed, 10 server-validated knife strikes, cooldown/range checks, caught spectators, results, host restart, and back-to-lobby.
+- Styled the role HUD, prop picker/taken states, hunter hide screen, results card, knife swing, and wasted-strike puff in the dark teal UI. No audio, vision, fog, mobile controls, screenshots, map edits, or commits.
+- `npm test` is one headless script. Passes three/four-client checks for timer, strike exhaustion, all caught, restart/role selection, free auto-pick, concurrent duplicate picks, cluster lock, decoy waste, knife range/cooldown, and four-player unique props.
+- Rough: effects are visual without audio; hunter role is rerolled with `Math.random`; prop previews follow the model files in the supplied folder. Run: `npm run dev`.

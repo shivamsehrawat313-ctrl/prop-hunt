@@ -14,6 +14,13 @@ import {
   CAMERA_ZOOM,
   PLAYER_HEIGHT_UNITS,
   PLAYER_COLLISION_RADIUS,
+  PLAYER_MAX_SPEED,
+  HIDER_SPEED_FACTOR,
+  HUNTER_SPEED_FACTOR,
+  ROLE_REVEAL_MS,
+  ROUND_EFFECT_MS,
+  KNIFE_SWING_RADIUS,
+  KNIFE_SWING_HALF_ANGLE,
   SNAPSHOT_BUFFER_MAX_MS,
   SNAPSHOT_INTERPOLATION_DELAY_MS,
 } from '../../shared/constants.js';
@@ -53,6 +60,7 @@ const player = new THREE.Group();
 player.name = 'local-player';
 const playerRim = new THREE.PointLight(new THREE.Color('#80f5de'), 0.65, 5.5, 2);
 playerRim.position.set(0, 1.2, 0);
+playerRim.userData.avatarPart = true;
 player.add(playerRim);
 scene.add(player);
 
@@ -62,6 +70,8 @@ let quality = 'high';
 let environment;
 let sceneReady = false;
 let activeRoom = null;
+let shownRound = 0;
+let roleRevealTimer = null;
 let frameCount = 0;
 let fpsAt = performance.now();
 let toastTimer;
@@ -102,6 +112,7 @@ function createHunterFigure(figure = player, accentColor = '#a8eedc') {
     if (rotation) mesh.rotation.set(...rotation);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData.avatarPart = true;
     figure.add(mesh);
     return mesh;
   };
@@ -148,8 +159,8 @@ function ensureRemotePlayer(remote) {
   const group = new THREE.Group();
   createHunterFigure(group, color);
   const ring = new THREE.Mesh(new THREE.RingGeometry(PLAYER_COLLISION_RADIUS * 1.15, PLAYER_COLLISION_RADIUS * 1.55, 20), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.86, side: THREE.DoubleSide, depthWrite: false }));
-  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.035; group.add(ring);
-  group.add(createNameLabel(remote.name, color));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.035; ring.userData.avatarPart = true; group.add(ring);
+  const label = createNameLabel(remote.name, color); label.userData.avatarPart = true; group.add(label);
   scene.add(group);
   const view = { id: remote.id, group, name: remote.name, color, buffer: [] };
   remotePlayers.set(remote.id, view);
@@ -158,25 +169,104 @@ function ensureRemotePlayer(remote) {
 
 function applyRoomState(room) {
   activeRoom = room;
-  if (controls) controls.enabled = Boolean(sceneReady && room?.phase === 'game');
-  if (!room || room.phase !== 'game') {
+  if (room?.phase === 'lobby') shownRound = 0;
+  const me = room?.players.find((item) => item.id === room.playerId);
+  player.visible = !me?.caught;
+  const canMove = sceneReady && ['hide', 'hunt'].includes(room?.phase) && !me?.caught && !(room?.phase === 'hide' && me?.role === 'hunter');
+  if (controls) {
+    controls.enabled = Boolean(canMove);
+    controls.speed = me?.role === 'hunter'
+      ? PLAYER_MAX_SPEED * HUNTER_SPEED_FACTOR
+      : me?.role === 'hider' && me.disguiseType ? PLAYER_MAX_SPEED * HIDER_SPEED_FACTOR : PLAYER_MAX_SPEED;
+  }
+  if (room && room.roundNumber > shownRound && me?.role) {
+    shownRound = room.roundNumber;
+    const reveal = document.querySelector('#role-reveal'); reveal.textContent = me.role === 'hunter' ? 'YOU ARE THE HUNTER' : 'YOU ARE A HIDER: PICK A PROP'; reveal.hidden = false;
+    clearTimeout(roleRevealTimer); roleRevealTimer = setTimeout(() => { reveal.hidden = true; }, ROLE_REVEAL_MS);
+  }
+  if (!room || room.phase === 'lobby') {
     for (const view of remotePlayers.values()) scene.remove(view.group);
     remotePlayers.clear();
   }
-  if (!room || room.phase !== 'game' || !sceneReady) return;
-  const me = room.players.find((item) => item.id === room.playerId);
-  if (me && controls) { controls.position.set(me.x, 0, me.z); controls.update(0); }
+  if (!room || room.phase === 'lobby' || !sceneReady) return;
+  if (me && controls) { controls.position.set(me.x, 0, me.z); syncDisguise(player, me, true); controls.update(0); }
   resize();
 }
 
+function syncDisguise(group, state, local = false) {
+  const active = Boolean(!state?.caught && state?.role === 'hider' && state.disguiseType);
+  const visual = group.userData.disguiseVisual;
+  if (!active) {
+    group.userData.disguisePendingType = null;
+    if (visual) { group.remove(visual); group.userData.disguiseVisual = null; }
+    for (const child of group.children) if (child.userData.avatarPart) child.visible = true;
+    return;
+  }
+  if (visual?.userData.disguiseType === state.disguiseType || group.userData.disguisePendingType === state.disguiseType) { for (const child of group.children) if (child.userData.avatarPart) child.visible = false; return; }
+  if (visual) group.remove(visual);
+  group.userData.disguiseVisual = null;
+  const requestedType = state.disguiseType;
+  group.userData.disguisePendingType = requestedType;
+  const pendingModel = environment?.createDisguiseVisual(state.disguiseType, state.disguiseScale);
+  if (!pendingModel) { group.userData.disguisePendingType = null; return; }
+  pendingModel.then((model) => {
+    if (!model || group.userData.disguisePendingType !== requestedType || !activeRoom || (!local && !group.parent)) return;
+    group.userData.disguisePendingType = null;
+    model.userData.disguiseType = requestedType;
+    model.scale.multiplyScalar(1 / Math.max(0.001, group.scale.x));
+    group.add(model); group.userData.disguiseVisual = model;
+    for (const child of group.children) if (child.userData.avatarPart) child.visible = false;
+  });
+}
+
+function showRoundEffect(effect) {
+  if (!effect) return;
+  const from = new THREE.Vector3(effect.x, terrainHeightAt(effect.x, effect.z, map) + 0.35, effect.z);
+  const to = new THREE.Vector3(effect.endX, terrainHeightAt(effect.endX, effect.endZ, map) + 0.35, effect.endZ);
+  const forward = Math.atan2(effect.endZ - effect.z, effect.endX - effect.x);
+  const arcPoints = Array.from({ length: 9 }, (_, i) => {
+    const angle = forward - KNIFE_SWING_HALF_ANGLE + KNIFE_SWING_HALF_ANGLE * 2 * i / 8;
+    return new THREE.Vector3(effect.x + Math.cos(angle) * KNIFE_SWING_RADIUS, from.y, effect.z + Math.sin(angle) * KNIFE_SWING_RADIUS);
+  });
+  const geometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+  const material = new THREE.LineBasicMaterial({ color: effect.result === 'wasted' ? '#d6c19a' : '#afffe8', transparent: true, opacity: 0.95 });
+  const line = new THREE.Line(geometry, material); scene.add(line);
+  if (effect.result === 'wasted') {
+    const puff = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18, 0), new THREE.MeshBasicMaterial({ color: '#c6ae84', transparent: true, opacity: 0.78 }));
+    puff.position.copy(to); scene.add(puff); setTimeout(() => { scene.remove(puff); puff.geometry.dispose(); puff.material.dispose(); }, ROUND_EFFECT_MS);
+  }
+  setTimeout(() => { scene.remove(line); geometry.dispose(); material.dispose(); }, ROUND_EFFECT_MS);
+}
+
+const pointerRay = new THREE.Raycaster(); const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); const aimPoint = new THREE.Vector3();
+function strikeForward() {
+  const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
+  if (activeRoom?.phase !== 'hunt' || me?.role !== 'hunter' || me.caught) return false;
+  const angle = player.rotation.y;
+  multiplayer?.strike({ x: -Math.sin(angle), z: -Math.cos(angle) });
+  return true;
+}
+canvas.addEventListener('pointerdown', (event) => {
+  const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
+  if (activeRoom?.phase !== 'hunt' || me?.role !== 'hunter' || me.caught) return;
+  pointerRay.setFromCamera(new THREE.Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1), camera);
+  aimPlane.constant = -player.position.y;
+  if (!pointerRay.ray.intersectPlane(aimPlane, aimPoint)) return;
+  const x = aimPoint.x - player.position.x; const z = aimPoint.z - player.position.z; const length = Math.hypot(x, z);
+  if (length > 0.01) multiplayer?.strike({ x: x / length, z: z / length });
+});
+
 function applySnapshot(snapshot) {
-  if (!snapshot || snapshot.phase !== 'game' || !activeRoom) return;
+  if (!snapshot || !['hide', 'hunt', 'results'].includes(snapshot.phase) || !activeRoom) return;
   const seen = new Set();
   const serverTime = Number(snapshot.serverTime) || Date.now();
   for (const item of snapshot.players) {
-    if (item.id === activeRoom.playerId) { controls?.reconcile(item.x, item.z); continue; }
+    if (item.id === activeRoom.playerId) { controls?.reconcile(item.x, item.z); syncDisguise(player, item, true); continue; }
     seen.add(item.id);
     const view = ensureRemotePlayer({ ...item, color: activeRoom.players.find((player) => player.id === item.id)?.color });
+    syncDisguise(view.group, item);
+    if (item.caught && view.group.userData.disguiseVisual) { view.group.remove(view.group.userData.disguiseVisual); view.group.userData.disguiseVisual = null; }
+    view.group.visible = !item.caught;
     view.name = item.name;
     view.buffer.push({ time: serverTime, x: item.x, z: item.z, angle: item.angle });
     const cutoff = serverTime - SNAPSHOT_BUFFER_MAX_MS;
@@ -206,7 +296,7 @@ async function prepareScene() {
   try {
     createHunterFigure();
     const localRing = new THREE.Mesh(new THREE.RingGeometry(PLAYER_COLLISION_RADIUS * 1.15, PLAYER_COLLISION_RADIUS * 1.65, 24), new THREE.MeshBasicMaterial({ color: '#76ffe1', transparent: true, opacity: 0.96, side: THREE.DoubleSide, depthWrite: false }));
-    localRing.rotation.x = -Math.PI / 2; localRing.position.y = 0.035; player.add(localRing);
+    localRing.rotation.x = -Math.PI / 2; localRing.position.y = 0.035; localRing.userData.avatarPart = true; player.add(localRing);
     const [, pathStats, environmentState] = await Promise.all([
       river.ready,
       createPaths(map, river, scene),
@@ -247,8 +337,10 @@ async function prepareScene() {
   } catch (error) {
     console.error(error);
     loading.innerHTML = '<b>Could not load the forest assets.</b><small>Check that client/public/models is present.</small>';
-    if (import.meta.env.DEV) loading.querySelector('small').textContent = String(error?.message || error);
+    const message = String(error?.message || error);
+    if (import.meta.env.DEV) loading.querySelector('small').textContent = message;
     loading.classList.add('error');
+    multiplayer?.setWorldLoadError(import.meta.env.DEV ? message : 'World assets failed to load. Refresh to retry.');
   }
 }
 
@@ -264,6 +356,15 @@ function setQuality(next) {
 }
 
 window.addEventListener('keydown', (event) => {
+  if (event.code === 'Space' && !event.repeat) {
+    const target = event.target;
+    const typing = target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+    if (!typing && strikeForward()) event.preventDefault();
+  }
+  if (event.key.toLowerCase() === 'e' && !event.repeat && activeRoom?.phase === 'hide') {
+    const me = activeRoom.players.find((item) => item.id === activeRoom.playerId);
+    if (me?.role === 'hider' && !me.disguiseLocked) multiplayer?.lockDisguise();
+  }
   if (import.meta.env.DEV && event.key.toLowerCase() === 'h' && !event.repeat && environment) {
     const highlighted = environment.toggleHiderHighlights();
     showToast(highlighted ? 'Hider props highlighted' : 'Hider prop highlight off');

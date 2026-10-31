@@ -19,21 +19,18 @@ export function updateDistanceCulledInstances(playerPosition) {
   for (const instances of distanceCulledMeshes) {
     const dx = playerPosition.x - instances.userData.distanceCullLastX;
     const dz = playerPosition.z - instances.userData.distanceCullLastZ;
-    if (dx * dx + dz * dz < 4) continue;
+    if (dx * dx + dz * dz < 9) continue;
     instances.userData.distanceCullLastX = playerPosition.x;
     instances.userData.distanceCullLastZ = playerPosition.z;
-    const visible = instances.userData.distanceCullMatrices
-      .map((matrix) => {
-        const x = matrix.elements[12];
-        const z = matrix.elements[14];
-        const ox = x - playerPosition.x;
-        const oz = z - playerPosition.z;
-        return { matrix, distanceSq: ox * ox + oz * oz };
-      })
-      .filter((item) => item.distanceSq <= INSTANCE_VIEW_DISTANCE_SQ)
-      .sort((a, b) => a.distanceSq - b.distanceSq);
-    for (let index = 0; index < visible.length; index += 1) instances.setMatrixAt(index, visible[index].matrix);
-    instances.count = visible.length;
+    let visibleCount = 0;
+    for (const matrix of instances.userData.distanceCullMatrices) {
+      const ox = matrix.elements[12] - playerPosition.x;
+      const oz = matrix.elements[14] - playerPosition.z;
+      if (ox * ox + oz * oz > INSTANCE_VIEW_DISTANCE_SQ) continue;
+      instances.setMatrixAt(visibleCount, matrix);
+      visibleCount += 1;
+    }
+    instances.count = visibleCount;
     instances.instanceMatrix.needsUpdate = true;
   }
 }
@@ -41,7 +38,10 @@ export function updateDistanceCulledInstances(playerPosition) {
 export async function loadModel(fileName) {
   if (!modelCache.has(fileName)) {
     const url = fileName.startsWith('/') ? fileName : `/models/${fileName}`;
-    modelCache.set(fileName, gltfLoader.loadAsync(url));
+    modelCache.set(fileName, gltfLoader.loadAsync(url).catch((error) => {
+      const message = error?.message || String(error);
+      throw new Error(`Could not load model "${url}": ${message}`, { cause: error });
+    }));
   }
   return modelCache.get(fileName);
 }

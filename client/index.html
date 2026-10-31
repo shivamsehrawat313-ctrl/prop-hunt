@@ -46,6 +46,24 @@
         <div class="quality-row"><span>QUALITY</span><button data-quality="high" class="quality-button active">HIGH</button><button data-quality="medium" class="quality-button">MED</button><button data-quality="low" class="quality-button">LOW</button></div>
       </section>
       <button id="leave-game" class="hud leave-game" type="button">Leave room</button>
+      <section id="round-hud" class="hud round-hud" hidden>
+        <b id="round-role">YOU ARE A HIDER</b><span id="round-phase">HIDE</span><span id="round-timer">30</span>
+        <span id="round-strikes" hidden>STRIKES 10</span><span id="round-alive">PLAYERS ALIVE 0</span>
+        <span id="attack-hint" hidden>SPACE OR CLICK TO ATTACK</span>
+      </section>
+      <div id="role-reveal" class="role-reveal" hidden></div>
+      <div id="hunter-blocker" class="hunter-blocker" hidden>Hiders are hiding</div>
+      <section id="hider-picker" class="hud hider-picker" hidden>
+        <b>Choose a prop disguise</b><p>Pick one prop, then press E to lock your disguise.</p>
+        <div id="prop-grid" class="prop-grid"></div>
+        <button id="lock-disguise" type="button">LOCK DISGUISE · E</button>
+      </section>
+      <div id="spectator-banner" class="hud spectator-banner" hidden>CAUGHT · SPECTATING</div>
+      <section id="round-results" class="screen results-screen" hidden>
+        <div class="panel results-card"><h2 id="results-title">HIDERS WIN</h2><p id="results-reason"></p><b>CAUGHT</b><ul id="caught-list" class="player-list"></ul>
+          <button id="restart-round" type="button">Restart</button><button id="back-lobby" class="quiet-button" type="button">Back to lobby</button><p id="restart-waiting" hidden>Waiting for host to restart.</p>
+        </div>
+      </section>
       <div id="loading" class="loading"><span class="loading-mark">✦</span><b>Preparing the forest…</b><small>Loading the world for play</small></div>
       <div id="toast" class="toast" aria-live="polite"></div>
     </main>
