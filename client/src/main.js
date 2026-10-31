@@ -189,7 +189,7 @@ function applyRoomState(room) {
     remotePlayers.clear();
   }
   if (!room || room.phase === 'lobby' || !sceneReady) return;
-  if (me && controls) { controls.position.set(me.x, 0, me.z); syncDisguise(player, me, true); controls.update(0); }
+  if (me && controls) { controls.position.set(me.x, 0, me.z); controls.resetPredictionHistory(); syncDisguise(player, me, true); controls.update(0); }
   resize();
 }
 
@@ -261,7 +261,7 @@ function applySnapshot(snapshot) {
   const seen = new Set();
   const serverTime = Number(snapshot.serverTime) || Date.now();
   for (const item of snapshot.players) {
-    if (item.id === activeRoom.playerId) { controls?.reconcile(item.x, item.z); syncDisguise(player, item, true); continue; }
+    if (item.id === activeRoom.playerId) { controls?.reconcile(item.x, item.z, serverTime); syncDisguise(player, item, true); continue; }
     seen.add(item.id);
     const view = ensureRemotePlayer({ ...item, color: activeRoom.players.find((player) => player.id === item.id)?.color });
     syncDisguise(view.group, item);

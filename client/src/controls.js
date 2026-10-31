@@ -19,6 +19,7 @@ export class PlayerControls {
     this.speed = PLAYER_MAX_SPEED;
     this.enabled = false;
     this.onInput = null;
+    this.predictionHistory = [];
     this.cameraTiltRadians = THREE.MathUtils.degToRad(CAMERA_TILT_DEGREES);
     this.zoneId = 'A';
     this.boundDown = (event) => {
@@ -31,6 +32,8 @@ export class PlayerControls {
   }
 
   update(delta) {
+    const frameEnd = Date.now();
+    const frameStart = frameEnd - Math.max(0, delta) * 1000;
     const dx = this.enabled ? (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0) : 0;
     const dz = this.enabled ? (this.keys.has('s') || this.keys.has('arrowdown') ? 1 : 0) - (this.keys.has('w') || this.keys.has('arrowup') ? 1 : 0) : 0;
     const length = Math.hypot(dx, dz);
@@ -39,6 +42,9 @@ export class PlayerControls {
       this.position.x = moved.x; this.position.z = moved.z;
       this.player.rotation.y = Math.atan2(-dx, -dz);
     }
+    this.predictionHistory.push({ start: frameStart, end: frameEnd, delta, dx, dz });
+    const oldestFrame = frameEnd - 1000;
+    while (this.predictionHistory.length > 1 && this.predictionHistory[1].end < oldestFrame) this.predictionHistory.shift();
     this.onInput?.({ x: dx, z: dz });
     this.position.y = terrainHeightAt(this.position.x, this.position.z, this.map);
     const depth = waterDepth(this.position.x, this.position.z, this.map);
@@ -61,14 +67,35 @@ export class PlayerControls {
     }
   }
 
-  reconcile(x, z) {
-    const error = Math.hypot(x - this.position.x, z - this.position.z);
-    if (error > PLAYER_POSITION_CORRECTION_THRESHOLD) {
-      this.position.x = x; this.position.z = z;
-    } else {
-      this.position.x += (x - this.position.x) * 0.2;
-      this.position.z += (z - this.position.z) * 0.2;
+  reconcile(x, z, serverTime = Date.now()) {
+    // Snapshots describe the server's position at serverTime, not at arrival
+    // time. Reapply local inputs since that instant instead of easing toward a
+    // stale point (which visibly pulls the local player backwards at higher RTT).
+    let position = { x, z };
+    const replayFrom = Number(serverTime);
+    if (Number.isFinite(replayFrom)) {
+      for (const frame of this.predictionHistory) {
+        const replayStart = Math.max(frame.start, replayFrom);
+        const replayMs = frame.end - replayStart;
+        if (replayMs <= 0 || frame.end <= replayFrom) continue;
+        const replayDelta = Math.min(frame.delta, replayMs / 1000);
+        position = movePlayer(position, { x: frame.dx, z: frame.dz }, replayDelta, {
+          map: this.map, colliders: this.colliders, speed: this.speed,
+        });
+      }
     }
+    const error = Math.hypot(position.x - this.position.x, position.z - this.position.z);
+    if (error > PLAYER_POSITION_CORRECTION_THRESHOLD * 4) {
+      this.position.x = position.x;
+      this.position.z = position.z;
+    } else {
+      this.position.x += (position.x - this.position.x) * 0.35;
+      this.position.z += (position.z - this.position.z) * 0.35;
+    }
+  }
+
+  resetPredictionHistory() {
+    this.predictionHistory.length = 0;
   }
 
   dispose() {
