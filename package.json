@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "socket.io": "^4.8.1",
+    "vite": "^7.1.7",
     "three": "^0.180.0"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "socket.io-client": "^4.8.4",
-    "vite": "^7.1.7"
+    "socket.io-client": "^4.8.4"
   }
 }
