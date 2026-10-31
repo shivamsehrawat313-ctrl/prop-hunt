@@ -1,8 +1,8 @@
 import { io } from 'socket.io-client';
 import {
-  PLAYER_INPUT_MAX_DT_SECONDS, ROOM_CODE_LENGTH,
+  GAME_TICK_INTERVAL_MS, PLAYER_INPUT_MAX_DT_SECONDS, ROOM_CODE_LENGTH,
   SNAPSHOT_INTERPOLATION_DELAY_MS, SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
-  SNAPSHOT_INTERPOLATION_RTT_FACTOR,
+  SNAPSHOT_INTERPOLATION_JITTER_FACTOR,
 } from '../../shared/constants.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -12,6 +12,7 @@ export class MultiplayerClient {
     this.onRoom = onRoom; this.onSnapshot = onSnapshot; this.onNetwork = onNetwork; this.onEffect = onEffect; this.onError = onError;
     this.room = null; this.worldReady = false; this.worldError = ''; this.snapshotsInWindow = 0; this.lastRateWindow = Date.now(); this.pingMs = null; this.snapshotHz = 0; this.inputSequence = 0;
     this.snapshotInterpolationDelayMs = SNAPSHOT_INTERPOLATION_DELAY_MS;
+    this.snapshotJitterMs = 0; this.lastSnapshotArrivalAt = null;
     this.nameInput = document.querySelector('#player-name'); this.codeInput = document.querySelector('#room-code-input'); this.error = document.querySelector('#lobby-error');
     this.landing = document.querySelector('#landing-screen'); this.lobby = document.querySelector('#lobby-screen'); this.game = document.querySelector('#game-shell');
     this.nameInput.value = safeStorageGet('shadow-hunt-name');
@@ -37,6 +38,16 @@ export class MultiplayerClient {
     this.socket.on('room:error', ({ message }) => { this.error.textContent = message || 'Unable to join room'; this.onError(message); this.render(); });
     this.socket.on('room:update', (room) => { this.room = room; this.render(); this.onRoom(room); });
     this.socket.on('room:snapshot', (snapshot) => {
+      const arrivalAt = performance.now();
+      if (this.lastSnapshotArrivalAt !== null) {
+        const intervalJitter = Math.min(100, Math.abs(arrivalAt - this.lastSnapshotArrivalAt - GAME_TICK_INTERVAL_MS));
+        this.snapshotJitterMs = Math.min(36, this.snapshotJitterMs * 0.8 + intervalJitter * 0.2);
+        this.snapshotInterpolationDelayMs = Math.min(
+          SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
+          SNAPSHOT_INTERPOLATION_DELAY_MS + this.snapshotJitterMs * SNAPSHOT_INTERPOLATION_JITTER_FACTOR,
+        );
+      }
+      this.lastSnapshotArrivalAt = arrivalAt;
       this.snapshotsInWindow += 1;
       if (this.room && snapshot?.code === this.room.code && snapshot.phase !== this.room.phase) {
         const byId = new Map((snapshot.players || []).map((player) => [player.id, player]));
@@ -56,10 +67,6 @@ export class MultiplayerClient {
     this.socket.on('round:effect', (effect) => this.onEffect(effect));
     this.socket.on('net:pong', ({ sentAt }) => {
       this.pingMs = Math.max(0, Date.now() - Number(sentAt));
-      this.snapshotInterpolationDelayMs = Math.min(
-        SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
-        SNAPSHOT_INTERPOLATION_DELAY_MS + this.pingMs * SNAPSHOT_INTERPOLATION_RTT_FACTOR,
-      );
       this.reportNetwork();
     });
     this.socket.on('room:left', () => { this.room = null; this.render(); this.onRoom(null); });
