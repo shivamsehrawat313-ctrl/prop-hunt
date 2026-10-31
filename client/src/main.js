@@ -8,9 +8,7 @@ import { createLighting, makeSoftShadow } from './lighting.js';
 import { PlayerControls } from './controls.js';
 import { MultiplayerClient } from './multiplayer.js';
 import { WaterEffects } from './waterEffects.js';
-import { GameAudio } from './audio.js';
 import { MiniMap } from './minimap.js';
-import { distanceToRiverBank } from '../../shared/water.js';
 import {
   CAMERA_FIELD_OF_VIEW_DEGREES,
   CAMERA_ZOOM,
@@ -41,18 +39,6 @@ const worldScaleReadout = document.querySelector('#world-scale');
 const networkDebugReadout = document.querySelector('#network-debug');
 const debugPanel = document.querySelector('#debug-panel');
 const gameShell = document.querySelector('#game-shell');
-const audio = new GameAudio();
-audio.bindUnlockGestures();
-const muteButton = document.querySelector('#audio-mute');
-const volumeSlider = document.querySelector('#audio-volume');
-volumeSlider.value = String(audio.volume);
-const updateMuteLabel = () => {
-  muteButton.textContent = audio.muted ? 'SOUND OFF' : 'SOUND ON';
-  muteButton.setAttribute('aria-label', audio.muted ? 'Unmute game audio' : 'Mute game audio');
-};
-updateMuteLabel();
-muteButton.addEventListener('click', () => { audio.toggleMuted(); updateMuteLabel(); });
-volumeSlider.addEventListener('input', () => audio.setVolume(volumeSlider.value));
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -87,9 +73,7 @@ let sceneReady = false;
 let activeRoom = null;
 let shownRound = 0;
 let spawnedRound = 0;
-let lastHuntTick = -1;
 let roleRevealTimer = null;
-let lastRiverAudioUpdate = 0;
 let frameCount = 0;
 let fpsAt = performance.now();
 let toastTimer;
@@ -186,16 +170,9 @@ function ensureRemotePlayer(remote) {
 }
 
 function applyRoomState(room) {
-  const previousRoom = activeRoom;
-  const previousMe = previousRoom?.players.find((item) => item.id === previousRoom.playerId);
   activeRoom = room;
   if (room?.phase === 'lobby') { shownRound = 0; spawnedRound = 0; }
   const me = room?.players.find((item) => item.id === room.playerId);
-  if (room?.phase === 'results' && previousRoom?.phase !== 'results') {
-    const winner = room.results?.winner;
-    audio.playResult(winner === (me?.role === 'hunter' ? 'hunter' : 'hiders'));
-  }
-  if (me?.disguiseLocked && !previousMe?.disguiseLocked) audio.playLock();
   player.visible = !me?.caught;
   const canMove = sceneReady && ['hide', 'hunt'].includes(room?.phase) && !me?.caught && !(room?.phase === 'hide' && me?.role === 'hunter');
   if (controls) {
@@ -206,7 +183,6 @@ function applyRoomState(room) {
   }
   if (room && room.roundNumber > shownRound && me?.role) {
     shownRound = room.roundNumber;
-    audio.playRoleReveal();
     const reveal = document.querySelector('#role-reveal'); reveal.textContent = me.role === 'hunter' ? 'YOU ARE THE HUNTER' : 'YOU ARE A HIDER: PICK A PROP'; reveal.hidden = false;
     clearTimeout(roleRevealTimer); roleRevealTimer = setTimeout(() => { reveal.hidden = true; }, ROLE_REVEAL_MS);
   }
@@ -290,7 +266,6 @@ canvas.addEventListener('pointerdown', (event) => {
 
 function applySnapshot(snapshot) {
   if (!snapshot || !['hide', 'hunt', 'results'].includes(snapshot.phase) || !activeRoom) return;
-  audio.updateRemoteFootsteps(snapshot.players, activeRoom.playerId);
   const seen = new Set();
   // Use this browser's monotonic clock for interpolation. Render's wall clock
   // and a player's browser clock are not guaranteed to be synchronized.
@@ -422,7 +397,6 @@ multiplayer = new MultiplayerClient({
   onRoom: applyRoomState,
   onSnapshot: applySnapshot,
   onNetwork: ({ pingMs, snapshotHz }) => { networkDebugReadout.textContent = `PING ${pingMs == null ? '—' : `${pingMs} ms`} · SNAPSHOTS ${snapshotHz || '—'} Hz`; },
-  onEffect: (effect) => { showRoundEffect(effect); audio.playRoundEffect(effect); },
   onError: (message) => { if (message) showToast(message); },
 });
 setQuality('high');
@@ -435,22 +409,6 @@ function animate(now) {
     playerShadow.position.x = player.position.x;
     playerShadow.position.y = player.position.y + 0.025;
     playerShadow.position.z = player.position.z;
-  }
-  const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
-  const moving = Boolean(controls?.enabled && controls.position.distanceToSquared(controls.previousPosition) > 0.000001);
-  audio.updateLocalFootsteps(player.position, me?.role, moving, delta);
-  const activeAudioScene = ['hide', 'hunt', 'results'].includes(activeRoom?.phase);
-  audio.setGameActive(activeAudioScene);
-  if (controls && now - lastRiverAudioUpdate >= 120) {
-    audio.setRiverDistance(distanceToRiverBank(controls.position.x, controls.position.z, map));
-    lastRiverAudioUpdate = now;
-  }
-  if (activeRoom?.phase === 'hunt') {
-    const seconds = Math.max(0, Math.ceil(((activeRoom.deadline || Date.now()) - Date.now()) / 1000));
-    if (seconds > 0 && seconds <= 10 && seconds !== lastHuntTick) audio.playTick();
-    lastHuntTick = seconds;
-  } else {
-    lastHuntTick = -1;
   }
   updateRemotePlayers();
   environment?.update(player.position, now / 1000);
@@ -471,5 +429,4 @@ prepareScene();
 window.addEventListener('beforeunload', () => {
   controls?.dispose();
   multiplayer?.dispose();
-  audio.dispose();
 });
