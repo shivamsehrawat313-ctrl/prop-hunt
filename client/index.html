@@ -9,13 +9,20 @@
   </head>
   <body>
     <section id="landing-screen" class="screen">
-      <form id="landing-card" class="panel" novalidate>
-        <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
-        <button id="create-room" type="submit">Create Room</button>
-        <div class="or-divider"><span>or</span></div>
-        <div class="join-row"><input id="room-code-input" maxlength="4" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code" /><button id="join-room" type="button">Join</button></div>
-        <p id="lobby-error" role="alert" aria-live="polite"></p>
-      </form>
+      <div class="landing-content">
+        <h1 class="landing-title">JUNGLE HUNT</h1>
+        <form id="landing-card" class="panel" novalidate>
+          <div class="rules-note" aria-label="Game rules">
+            <b>How to play</b>
+            <p>One player is the Hunter; everyone else disguises as a prop and hides. When the hunt begins, the Hunter has 10 attacks to catch them.</p>
+          </div>
+          <input id="player-name" name="name" minlength="2" maxlength="14" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required />
+          <button id="create-room" type="submit">Create Room</button>
+          <div class="or-divider"><span>or</span></div>
+          <div class="join-row"><input id="room-code-input" maxlength="4" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code" /><button id="join-room" type="button">Join</button></div>
+          <p id="lobby-error" role="alert" aria-live="polite"></p>
+        </form>
+      </div>
     </section>
 
     <section id="lobby-screen" class="screen" hidden>
