@@ -5,5 +5,5 @@ export default defineConfig({
   publicDir: 'public',
   server: { host: '0.0.0.0', port: 5173, strictPort: true, proxy: { '/socket.io': { target: 'http://localhost:3001', ws: true } } },
   optimizeDeps: { noDiscovery: true, include: [] },
-  build: { outDir: '../dist/client', emptyOutDir: true },
+  build: { outDir: '../build/client', emptyOutDir: true },
 });

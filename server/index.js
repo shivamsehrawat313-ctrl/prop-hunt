@@ -8,9 +8,8 @@ import { createGameService } from './gameServer.js';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.PORT || 3001);
-const distRoot = resolve(projectRoot, 'dist/client');
+const distRoot = resolve(projectRoot, 'build/client');
 const productionFilesReady = existsSync(resolve(distRoot, 'index.html'));
-const allowedOrigins = (process.env.CLIENT_ORIGIN || '').split(',').map((value) => value.trim()).filter(Boolean);
 
 const mimeTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.bin': 'application/octet-stream' };
 
@@ -49,7 +48,8 @@ const httpServer = createServer((request, response) => {
 });
 
 const io = new Server(httpServer, {
-  cors: { origin(origin, callback) { if (!origin || !allowedOrigins.length || allowedOrigins.includes(origin)) callback(null, true); else callback(new Error('Origin not allowed')); }, methods: ['GET', 'POST'], credentials: true },
+  // The game is served from the same origin; both transports remain enabled
+  // so browsers can fall back to polling when a websocket cannot connect.
   transports: ['websocket', 'polling'], allowEIO3: false,
 });
 createGameService(io);
