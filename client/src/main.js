@@ -26,6 +26,7 @@ import {
   SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
 } from '../../shared/constants.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
+import { MobileExperience } from './mobileExperience.js';
 import './style.css';
 
 const canvas = document.querySelector('#scene');
@@ -67,7 +68,9 @@ scene.add(player);
 
 let controls;
 let multiplayer;
-let quality = 'high';
+let mobileExperience;
+const touchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+let quality = touchDevice ? 'low' : 'high';
 let environment;
 let sceneReady = false;
 let activeRoom = null;
@@ -96,6 +99,7 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
 resize();
 
 function createHunterFigure(figure = player, accentColor = '#a8eedc') {
@@ -170,6 +174,7 @@ function ensureRemotePlayer(remote) {
 }
 
 function applyRoomState(room) {
+  mobileExperience?.setRoomState(room);
   activeRoom = room;
   if (room?.phase === 'lobby') { shownRound = 0; spawnedRound = 0; }
   const me = room?.players.find((item) => item.id === room.playerId);
@@ -364,7 +369,7 @@ async function prepareScene() {
 
 function setQuality(next) {
   quality = next;
-  const ratio = next === 'high' ? Math.min(window.devicePixelRatio || 1, 1.6) : next === 'medium' ? Math.min(window.devicePixelRatio || 1, 1.15) : 0.85;
+  const ratio = next === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : next === 'medium' ? Math.min(window.devicePixelRatio || 1, 1.15) : 0.85;
   renderer.setPixelRatio(ratio);
   renderer.shadowMap.enabled = next === 'high';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -393,13 +398,16 @@ document.querySelectorAll('[data-quality]').forEach((button) => button.addEventL
 window.addEventListener('keydown', (event) => {
   if (import.meta.env.DEV && event.key === 'F3') { event.preventDefault(); debugPanel.hidden = !debugPanel.hidden; }
 });
+mobileExperience = new MobileExperience({ onResize: () => resize(), showDebug: import.meta.env.DEV });
+if (import.meta.env.DEV) window.__mobileExperience = mobileExperience;
+
 multiplayer = new MultiplayerClient({
   onRoom: applyRoomState,
   onSnapshot: applySnapshot,
   onNetwork: ({ pingMs, snapshotHz }) => { networkDebugReadout.textContent = `PING ${pingMs == null ? '—' : `${pingMs} ms`} · SNAPSHOTS ${snapshotHz || '—'} Hz`; },
   onError: (message) => { if (message) showToast(message); },
 });
-setQuality('high');
+setQuality(quality);
 
 function animate(now) {
   requestAnimationFrame(animate);

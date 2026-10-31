@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#102c2a" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Shadow Hunt</title>
@@ -52,6 +52,11 @@
       <section class="hud controls-panel" aria-label="Display controls">
         <div class="quality-row"><span>QUALITY</span><button data-quality="high" class="quality-button active">HIGH</button><button data-quality="medium" class="quality-button">MED</button><button data-quality="low" class="quality-button">LOW</button></div>
       </section>
+      <button id="phone-settings-toggle" class="phone-settings-toggle" type="button" aria-label="Open game settings" aria-expanded="false">&#9881;</button>
+      <section id="mobile-controls" aria-label="Touch game controls">
+        <div id="move-stick" class="move-stick" role="application" aria-label="Movement joystick"><span id="move-stick-knob"></span></div>
+        <div class="mobile-action-area"><button id="lock-disguise" type="button" aria-label="Lock disguise" hidden>Lock</button><button id="mobile-attack" type="button" aria-label="Attack" hidden>Attack</button></div>
+      </section>
       <button id="leave-game" class="hud leave-game" type="button">Leave room</button>
       <section id="round-hud" class="hud round-hud" hidden>
         <b id="round-role">YOU ARE A HIDER</b><span id="round-phase">HIDE</span><span id="round-timer">30</span>
@@ -60,10 +65,10 @@
       </section>
       <div id="role-reveal" class="role-reveal" hidden></div>
       <div id="hunter-blocker" class="hunter-blocker" hidden>Hiders are hiding</div>
+      <div id="rotate-overlay" class="rotate-overlay" hidden role="status" aria-live="polite"><span class="rotate-phone" aria-hidden="true"></span><strong>Rotate your phone to play</strong></div>
       <section id="hider-picker" class="hud hider-picker" hidden>
         <b>Choose a prop disguise</b><p>Pick one prop, then press E to lock your disguise.</p>
         <div id="prop-grid" class="prop-grid"></div>
-        <button id="lock-disguise" type="button">LOCK DISGUISE · E</button>
       </section>
       <div id="spectator-banner" class="hud spectator-banner" hidden>CAUGHT · SPECTATING</div>
       <section id="round-results" class="screen results-screen" hidden>
