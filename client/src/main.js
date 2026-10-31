@@ -23,6 +23,7 @@ import {
   KNIFE_SWING_HALF_ANGLE,
   SNAPSHOT_BUFFER_MAX_MS,
   SNAPSHOT_INTERPOLATION_DELAY_MS,
+  SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
 } from '../../shared/constants.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
 import './style.css';
@@ -276,7 +277,11 @@ function applySnapshot(snapshot) {
 }
 
 function updateRemotePlayers() {
-  const renderAt = Date.now() - SNAPSHOT_INTERPOLATION_DELAY_MS;
+  const interpolationDelay = Math.min(
+    SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
+    multiplayer?.snapshotInterpolationDelayMs || SNAPSHOT_INTERPOLATION_DELAY_MS,
+  );
+  const renderAt = Date.now() - interpolationDelay;
   const minimapPlayers = [];
   for (const view of remotePlayers.values()) {
     const samples = view.buffer;

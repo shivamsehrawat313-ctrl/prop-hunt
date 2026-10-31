@@ -1,5 +1,9 @@
 import { io } from 'socket.io-client';
-import { GAME_TICK_INTERVAL_MS, ROOM_CODE_LENGTH } from '../../shared/constants.js';
+import {
+  GAME_TICK_INTERVAL_MS, ROOM_CODE_LENGTH,
+  SNAPSHOT_INTERPOLATION_DELAY_MS, SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
+  SNAPSHOT_INTERPOLATION_RTT_FACTOR,
+} from '../../shared/constants.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -7,6 +11,7 @@ export class MultiplayerClient {
   constructor({ onRoom = () => {}, onSnapshot = () => {}, onNetwork = () => {}, onEffect = () => {}, onError = () => {} } = {}) {
     this.onRoom = onRoom; this.onSnapshot = onSnapshot; this.onNetwork = onNetwork; this.onEffect = onEffect; this.onError = onError;
     this.room = null; this.input = { x: 0, z: 0 }; this.worldReady = false; this.worldError = ''; this.snapshotsInWindow = 0; this.lastRateWindow = Date.now(); this.pingMs = null; this.snapshotHz = 0;
+    this.snapshotInterpolationDelayMs = SNAPSHOT_INTERPOLATION_DELAY_MS;
     this.nameInput = document.querySelector('#player-name'); this.codeInput = document.querySelector('#room-code-input'); this.error = document.querySelector('#lobby-error');
     this.landing = document.querySelector('#landing-screen'); this.lobby = document.querySelector('#lobby-screen'); this.game = document.querySelector('#game-shell');
     this.nameInput.value = safeStorageGet('shadow-hunt-name');
@@ -49,7 +54,14 @@ export class MultiplayerClient {
       const now = Date.now(); if (now - this.lastRateWindow >= 1000) { this.snapshotHz = Math.round(this.snapshotsInWindow * 1000 / (now - this.lastRateWindow)); this.snapshotsInWindow = 0; this.lastRateWindow = now; this.reportNetwork(); }
     });
     this.socket.on('round:effect', (effect) => this.onEffect(effect));
-    this.socket.on('net:pong', ({ sentAt }) => { this.pingMs = Math.max(0, Date.now() - Number(sentAt)); this.reportNetwork(); });
+    this.socket.on('net:pong', ({ sentAt }) => {
+      this.pingMs = Math.max(0, Date.now() - Number(sentAt));
+      this.snapshotInterpolationDelayMs = Math.min(
+        SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
+        SNAPSHOT_INTERPOLATION_DELAY_MS + this.pingMs * SNAPSHOT_INTERPOLATION_RTT_FACTOR,
+      );
+      this.reportNetwork();
+    });
     this.socket.on('room:left', () => { this.room = null; this.render(); this.onRoom(null); });
     this.socket.on('disconnect', () => { this.input = { x: 0, z: 0 }; });
     this.inputTimer = setInterval(() => { if (['hide', 'hunt'].includes(this.room?.phase)) this.socket.emit('player:input', this.input); }, GAME_TICK_INTERVAL_MS);
@@ -63,7 +75,12 @@ export class MultiplayerClient {
   chooseDisguise(type) { this.socket.emit('disguise:choose', { type }); }
   lockDisguise() { this.socket.emit('disguise:lock'); }
   strike(aim) { this.socket.emit('hunter:strike', aim); }
-  setInput(input) { this.input = { x: clampInput(input?.x), z: clampInput(input?.z) }; }
+  setInput(input) {
+    const next = { x: clampInput(input?.x), z: clampInput(input?.z) };
+    if (next.x === this.input.x && next.z === this.input.z) return;
+    this.input = next;
+    if (['hide', 'hunt'].includes(this.room?.phase)) this.socket.emit('player:input', next);
+  }
   setWorldReady() { this.worldReady = true; this.worldError = ''; this.render(); }
   setWorldLoadError(message) { this.worldError = message || 'World assets failed to load. Refresh to retry.'; this.render(); }
   reportNetwork() { this.onNetwork({ pingMs: this.pingMs, snapshotHz: this.snapshotHz }); }
