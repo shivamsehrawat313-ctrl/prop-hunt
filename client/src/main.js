@@ -193,6 +193,7 @@ function applyRoomState(room) {
   if (!room || room.phase === 'lobby' || !sceneReady) return;
   if (me && controls && room.phase === 'hide' && room.roundNumber > spawnedRound) {
     controls.position.set(me.x, 0, me.z);
+    controls.resetPrediction();
     spawnedRound = room.roundNumber;
     syncDisguise(player, me, true);
     controls.update(0);
@@ -270,7 +271,11 @@ function applySnapshot(snapshot) {
   // and a player's browser clock are not guaranteed to be synchronized.
   const receivedAt = performance.now();
   for (const item of snapshot.players) {
-    if (item.id === activeRoom.playerId) { syncDisguise(player, item, true); continue; }
+    if (item.id === activeRoom.playerId) {
+      if (['hide', 'hunt'].includes(snapshot.phase) && !item.caught) controls?.reconcile(item.x, item.z, item.lastProcessedSeq);
+      syncDisguise(player, item, true);
+      continue;
+    }
     seen.add(item.id);
     const view = ensureRemotePlayer({ ...item, color: activeRoom.players.find((player) => player.id === item.id)?.color });
     syncDisguise(view.group, item);
@@ -333,7 +338,7 @@ async function prepareScene() {
         showToast(`Entered ${name}`);
       },
     });
-    controls.onInput = (input) => multiplayer?.setInput(input);
+    controls.onInput = (input) => multiplayer?.sendInput(input);
     controls.update(0);
     miniMap.draw({ x: map.spawn.x, y: map.spawn.y });
     if (import.meta.env.DEV) {

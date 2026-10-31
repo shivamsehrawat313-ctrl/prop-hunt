@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import {
-  GAME_TICK_INTERVAL_MS, ROOM_CODE_LENGTH,
+  PLAYER_INPUT_MAX_DT_SECONDS, ROOM_CODE_LENGTH,
   SNAPSHOT_INTERPOLATION_DELAY_MS, SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
   SNAPSHOT_INTERPOLATION_RTT_FACTOR,
 } from '../../shared/constants.js';
@@ -10,7 +10,7 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 export class MultiplayerClient {
   constructor({ onRoom = () => {}, onSnapshot = () => {}, onNetwork = () => {}, onEffect = () => {}, onError = () => {} } = {}) {
     this.onRoom = onRoom; this.onSnapshot = onSnapshot; this.onNetwork = onNetwork; this.onEffect = onEffect; this.onError = onError;
-    this.room = null; this.input = { x: 0, z: 0 }; this.worldReady = false; this.worldError = ''; this.snapshotsInWindow = 0; this.lastRateWindow = Date.now(); this.pingMs = null; this.snapshotHz = 0;
+    this.room = null; this.worldReady = false; this.worldError = ''; this.snapshotsInWindow = 0; this.lastRateWindow = Date.now(); this.pingMs = null; this.snapshotHz = 0; this.inputSequence = 0;
     this.snapshotInterpolationDelayMs = SNAPSHOT_INTERPOLATION_DELAY_MS;
     this.nameInput = document.querySelector('#player-name'); this.codeInput = document.querySelector('#room-code-input'); this.error = document.querySelector('#lobby-error');
     this.landing = document.querySelector('#landing-screen'); this.lobby = document.querySelector('#lobby-screen'); this.game = document.querySelector('#game-shell');
@@ -63,8 +63,6 @@ export class MultiplayerClient {
       this.reportNetwork();
     });
     this.socket.on('room:left', () => { this.room = null; this.render(); this.onRoom(null); });
-    this.socket.on('disconnect', () => { this.input = { x: 0, z: 0 }; });
-    this.inputTimer = setInterval(() => { if (['hide', 'hunt'].includes(this.room?.phase)) this.socket.emit('player:input', this.input); }, GAME_TICK_INTERVAL_MS);
     this.pingTimer = setInterval(() => { if (this.socket.connected) this.socket.emit('net:ping', Date.now()); }, 1000);
     this.uiTimer = setInterval(() => this.renderRoundHud(), 100);
     this.render();
@@ -75,11 +73,18 @@ export class MultiplayerClient {
   chooseDisguise(type) { this.socket.emit('disguise:choose', { type }); }
   lockDisguise() { this.socket.emit('disguise:lock'); }
   strike(aim) { this.socket.emit('hunter:strike', aim); }
-  setInput(input) {
-    const next = { x: clampInput(input?.x), z: clampInput(input?.z) };
-    if (next.x === this.input.x && next.z === this.input.z) return;
-    this.input = next;
-    if (['hide', 'hunt'].includes(this.room?.phase)) this.socket.emit('player:input', next);
+  sendInput(input) {
+    if (!this.socket.connected || !['hide', 'hunt'].includes(this.room?.phase)) return null;
+    const me = this.room.players.find((player) => player.id === this.room.playerId);
+    if (!me || me.caught || this.room.phase === 'hide' && me.role === 'hunter') return null;
+    const packet = {
+      seq: ++this.inputSequence,
+      x: clampInput(input?.x),
+      z: clampInput(input?.z),
+      dt: Math.min(PLAYER_INPUT_MAX_DT_SECONDS, Math.max(0, Number(input?.dt) || 0)),
+    };
+    this.socket.emit('player:input', packet);
+    return packet;
   }
   setWorldReady() { this.worldReady = true; this.worldError = ''; this.render(); }
   setWorldLoadError(message) { this.worldError = message || 'World assets failed to load. Refresh to retry.'; this.render(); }
@@ -138,7 +143,7 @@ export class MultiplayerClient {
     if (this.worldError) this.error.textContent = this.worldError;
     this.renderRoundHud();
   }
-  dispose() { clearInterval(this.inputTimer); clearInterval(this.pingTimer); clearInterval(this.uiTimer); this.socket.disconnect(); }
+  dispose() { clearInterval(this.pingTimer); clearInterval(this.uiTimer); this.socket.disconnect(); }
 }
 function clampInput(value) { const number = Number(value) || 0; return Math.max(-1, Math.min(1, number)); }
 function safeStorageGet(key) { try { return localStorage.getItem(key) || ''; } catch { return ''; } }
