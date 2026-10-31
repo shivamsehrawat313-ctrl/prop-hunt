@@ -271,19 +271,9 @@ function showRoundEffect(effect) {
 }
 
 const pointerRay = new THREE.Raycaster(); const aimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); const aimPoint = new THREE.Vector3();
-function movementAttackAim() {
-  const keys = controls?.keys;
-  if (!keys?.size) return null;
-  const x = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'));
-  const z = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'));
-  const length = Math.hypot(x, z);
-  return length > 0 ? { x: x / length, z: z / length } : null;
-}
 function strikeForward() {
   const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
   if (activeRoom?.phase !== 'hunt' || me?.role !== 'hunter' || me.caught) return false;
-  const movementAim = movementAttackAim();
-  if (movementAim) { multiplayer?.strike(movementAim); return true; }
   const angle = player.rotation.y;
   multiplayer?.strike({ x: -Math.sin(angle), z: -Math.cos(angle) });
   return true;
@@ -291,8 +281,6 @@ function strikeForward() {
 canvas.addEventListener('pointerdown', (event) => {
   const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
   if (activeRoom?.phase !== 'hunt' || me?.role !== 'hunter' || me.caught) return;
-  const movementAim = movementAttackAim();
-  if (movementAim) { multiplayer?.strike(movementAim); return; }
   pointerRay.setFromCamera(new THREE.Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1), camera);
   aimPlane.constant = -player.position.y;
   if (!pointerRay.ray.intersectPlane(aimPlane, aimPoint)) return;

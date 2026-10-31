@@ -14,7 +14,7 @@ import {
   HUNT_PHASE_SEC, HIDER_SPEED_FACTOR, HUNTER_SPEED_FACTOR, INPUT_MAX_ABS, KNIFE_COOLDOWN_SEC,
   KNIFE_HIT_RADIUS, KNIFE_RANGE,
   MAX_ROOM_PLAYERS, PICK_DEADLINE_BEFORE_HIDE_END_SEC, PLAYER_INPUT_MAX_DT_SECONDS,
-  PLAYER_MAX_SPEED,
+  PLAYER_INPUT_QUEUE_MAX, PLAYER_MAX_SPEED,
   PROP_DECOY_SCALE_MAX, PROP_DECOY_SCALE_MIN, RECONNECT_WINDOW_MS, ROOM_CODE_LENGTH,
   ROUND_RESULTS_DISPLAY_MS,
 } from '../shared/constants.js';
@@ -70,7 +70,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
   function broadcastRoom(room) { for (const p of room.players.values()) if (p.connected && p.socket) { const state = publicRoom(room, p.id); p.socket.emit('room:update', state); if (room.phase !== 'lobby') p.socket.emit('round:update', state); } }
   function sendError(socket, message) { socket.emit('room:error', { message }); }
   function clearTimers(room) { clearTimeout(room.deleteTimer); clearTimeout(room.resultTimer); }
-  function resetPlayerRound(p) { p.role = null; p.caught = false; p.disguiseType = null; p.disguiseLocked = false; p.disguiseScale = 1; p.lastStrikeAt = 0; p.input = { x: 0, z: 0 }; p.inputCommand = null; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; p.legacyInput = false; }
+  function resetPlayerRound(p) { p.role = null; p.caught = false; p.disguiseType = null; p.disguiseLocked = false; p.disguiseScale = 1; p.lastStrikeAt = 0; p.input = { x: 0, z: 0 }; if (p.inputQueue) p.inputQueue.length = 0; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; p.legacyInput = false; }
   function returnToLobby(room) {
     room.phase = 'lobby'; room.deadline = 0; room.roundNumber = 0; room.results = null; room.catches = [];
     for (const p of room.players.values()) {
@@ -83,7 +83,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
   function finishRound(room, winner, reason) {
     if (room.phase === 'results' || room.phase === 'lobby') return;
     room.phase = 'results'; room.deadline = 0; room.results = { winner, reason, caught: room.catches.map((item) => ({ ...item })), at: Date.now() };
-    for (const p of room.players.values()) { p.input = { x: 0, z: 0 }; p.inputCommand = null; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; }
+    for (const p of room.players.values()) { p.input = { x: 0, z: 0 }; if (p.inputQueue) p.inputQueue.length = 0; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; }
     broadcastRoom(room);
     if (resultMs > 0) {
       clearTimeout(room.resultTimer);
@@ -144,7 +144,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
     for (const p of room.players.values()) if (p.connected && p.role === 'hider' && !p.caught) { const dx = p.x - hunter.x; const dz = p.z - hunter.z; const along = dx * ax + dz * az; const side = Math.abs(dx * az - dz * ax); if (along > 0 && along <= KNIFE_RANGE && side <= KNIFE_HIT_RADIUS) candidates.push({ kind: 'hider', target: p, along }); }
     candidates.sort((a, b) => a.along - b.along);
     const hit = candidates[0]; let result = 'miss';
-    if (hit?.kind === 'hider') { const p = hit.target; p.caught = true; p.input = { x: 0, z: 0 }; p.inputCommand = null; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; result = 'caught'; room.catches.push({ id: p.id, name: p.name }); }
+    if (hit?.kind === 'hider') { const p = hit.target; p.caught = true; p.input = { x: 0, z: 0 }; if (p.inputQueue) p.inputQueue.length = 0; if (Number.isSafeInteger(p.lastReceivedSeq)) p.lastProcessedSeq = p.lastReceivedSeq; result = 'caught'; room.catches.push({ id: p.id, name: p.name }); }
     for (const p of room.players.values()) if (p.connected && p.socket) p.socket.emit('round:effect', { kind: 'knife', result, x: hunter.x, z: hunter.z, endX: hunter.x + ax * Math.min(KNIFE_RANGE, hit?.along || KNIFE_RANGE), endZ: hunter.z + az * Math.min(KNIFE_RANGE, hit?.along || KNIFE_RANGE) });
     if (![...room.players.values()].some((p) => p.connected && p.role === 'hider' && !p.caught)) finishRound(room, 'hunter', 'All hiders caught');
     else if (room.strikesLeft === 0) finishRound(room, 'hiders', 'Hunter out of strikes');
@@ -155,7 +155,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
     socket.on('room:create', ({ name: rawName } = {}) => {
       const name = cleanName(rawName); if (!name) return sendError(socket, 'Enter your name'); if (roomForSocket(socket)) return sendError(socket, 'Leave your current room first');
       const code = roomCode(rooms); const room = { code, phase: 'lobby', hostId: socket.id, players: new Map(), roundNumber: 0, hunterId: null, strikesLeft: HUNTER_STRIKES, deadline: 0, results: null, catches: [], createdAt: Date.now() };
-      const player = { id: socket.id, name, normalizedName: name.toLowerCase(), x: map.spawn.x, z: map.spawn.y, angle: 0, ready: true, connected: true, socket, input: { x: 0, z: 0 }, inputCommand: null, lastReceivedSeq: -1, lastProcessedSeq: -1, legacyInput: false, color: PLAYER_COLORS[0], role: null, caught: false, disguiseType: null, disguiseLocked: false };
+      const player = { id: socket.id, name, normalizedName: name.toLowerCase(), x: map.spawn.x, z: map.spawn.y, angle: 0, ready: true, connected: true, socket, input: { x: 0, z: 0 }, inputQueue: [], lastReceivedSeq: -1, lastProcessedSeq: -1, legacyInput: false, color: PLAYER_COLORS[0], role: null, caught: false, disguiseType: null, disguiseLocked: false };
       room.players.set(player.id, player); rooms.set(code, room); socketRooms.set(socket.id, code); socket.join(code); socket.emit('room:created', { code }); broadcastRoom(room);
     });
     socket.on('room:join', ({ code: rawCode, name: rawName } = {}) => {
@@ -164,7 +164,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
       const room = rooms.get(code); if (room.phase !== 'lobby') return sendError(socket, 'Game already started'); if (roomForSocket(socket)) return sendError(socket, 'Leave your current room first');
       if (room.players.size >= MAX_ROOM_PLAYERS) return sendError(socket, 'Room full');
       if ([...room.players.values()].some((p) => p.normalizedName === name.toLowerCase())) return sendError(socket, 'Name already in room');
-      const used = new Set([...room.players.values()].map((p) => p.color)); const player = { id: socket.id, name, normalizedName: name.toLowerCase(), x: map.spawn.x, z: map.spawn.y, angle: 0, ready: false, connected: true, socket, input: { x: 0, z: 0 }, inputCommand: null, lastReceivedSeq: -1, lastProcessedSeq: -1, legacyInput: false, color: PLAYER_COLORS.find((c) => !used.has(c)) || PLAYER_COLORS[room.players.size % PLAYER_COLORS.length], role: null, caught: false, disguiseType: null, disguiseLocked: false };
+      const used = new Set([...room.players.values()].map((p) => p.color)); const player = { id: socket.id, name, normalizedName: name.toLowerCase(), x: map.spawn.x, z: map.spawn.y, angle: 0, ready: false, connected: true, socket, input: { x: 0, z: 0 }, inputQueue: [], lastReceivedSeq: -1, lastProcessedSeq: -1, legacyInput: false, color: PLAYER_COLORS.find((c) => !used.has(c)) || PLAYER_COLORS[room.players.size % PLAYER_COLORS.length], role: null, caught: false, disguiseType: null, disguiseLocked: false };
       room.players.set(player.id, player); socketRooms.set(socket.id, code); socket.join(code); socket.emit('room:joined', { code }); broadcastRoom(room);
     });
     socket.on('player:ready', () => { const room = roomForSocket(socket); const p = room?.players.get(socket.id); if (!room || room.phase !== 'lobby' || !p) return; p.ready = !p.ready; broadcastRoom(room); });
@@ -181,13 +181,13 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
       const movement = validInput(input);
       if (Number.isSafeInteger(input.seq)) {
         if (input.seq <= p.lastReceivedSeq) return;
+        if (p.inputQueue.length >= PLAYER_INPUT_QUEUE_MAX) p.inputQueue.shift();
         const dt = Math.min(PLAYER_INPUT_MAX_DT_SECONDS, Math.max(0, Number(input.dt) || PLAYER_INPUT_MAX_DT_SECONDS));
         const speedFactor = p.role === 'hunter' ? HUNTER_SPEED_FACTOR : p.role === 'hider' && p.disguiseType ? HIDER_SPEED_FACTOR : 1;
-        p.inputCommand = { seq: input.seq, x: movement.x, z: movement.z, dt, speedFactor };
+        p.inputQueue.push({ seq: input.seq, x: movement.x, z: movement.z, dt, speedFactor });
         p.lastReceivedSeq = input.seq;
         p.legacyInput = false;
       } else {
-        p.inputCommand = null;
         p.input = movement;
         p.legacyInput = true;
         if (Math.hypot(p.input.x, p.input.z) > 0.02) p.angle = Math.atan2(-p.input.x, -p.input.z);
@@ -212,9 +212,7 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
       if (room.phase === 'hide' || room.phase === 'hunt') for (const p of room.players.values()) {
         if (!p.connected && !p.isBot || p.caught) continue;
         if (p.isBot && now >= (p.nextWanderAt || 0)) { p.nextWanderAt = now + BOT_WANDER_INTERVAL_MIN_MS + Math.random() * (BOT_WANDER_INTERVAL_MAX_MS - BOT_WANDER_INTERVAL_MIN_MS); const angle = Math.random() * Math.PI * 2; p.input = Math.random() < 0.2 ? { x: 0, z: 0 } : { x: Math.cos(angle), z: Math.sin(angle) }; }
-        // Keep only the newest sequenced input so delayed or burst-delivered
-        // packets never leave the player walking through a stale one-second queue.
-        const command = p.inputCommand;
+        const command = p.inputQueue?.shift();
         let input = command || ((p.isBot || p.legacyInput) ? p.input : null);
         if (command) {
           p.lastProcessedSeq = command.seq;
