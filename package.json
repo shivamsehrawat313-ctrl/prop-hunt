@@ -10,6 +10,7 @@
     "server": "node server/index.js",
     "test:milestone2": "node tools/test-milestone2.js",
     "test:milestone3": "node tools/test-milestone3.js",
+    "test:audio": "node tools/test-audio.js",
     "test": "node tools/test-milestone3.js"
   },
   "dependencies": {
