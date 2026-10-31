@@ -369,7 +369,9 @@ async function prepareScene() {
 
 function setQuality(next) {
   quality = next;
-  const ratio = next === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5) : next === 'medium' ? Math.min(window.devicePixelRatio || 1, 1.15) : 0.85;
+  const ratio = next === 'high' ? Math.min(window.devicePixelRatio || 1, 1.5)
+    : next === 'medium' ? Math.min(window.devicePixelRatio || 1, 1.15)
+      : touchDevice ? Math.min(window.devicePixelRatio || 1, 1.25) : 0.85;
   renderer.setPixelRatio(ratio);
   renderer.shadowMap.enabled = next === 'high';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
