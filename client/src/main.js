@@ -72,6 +72,7 @@ let environment;
 let sceneReady = false;
 let activeRoom = null;
 let shownRound = 0;
+let spawnedRound = 0;
 let roleRevealTimer = null;
 let frameCount = 0;
 let fpsAt = performance.now();
@@ -170,7 +171,7 @@ function ensureRemotePlayer(remote) {
 
 function applyRoomState(room) {
   activeRoom = room;
-  if (room?.phase === 'lobby') shownRound = 0;
+  if (room?.phase === 'lobby') { shownRound = 0; spawnedRound = 0; }
   const me = room?.players.find((item) => item.id === room.playerId);
   player.visible = !me?.caught;
   const canMove = sceneReady && ['hide', 'hunt'].includes(room?.phase) && !me?.caught && !(room?.phase === 'hide' && me?.role === 'hunter');
@@ -190,7 +191,12 @@ function applyRoomState(room) {
     remotePlayers.clear();
   }
   if (!room || room.phase === 'lobby' || !sceneReady) return;
-  if (me && controls) { controls.position.set(me.x, 0, me.z); controls.resetPredictionHistory(); syncDisguise(player, me, true); controls.update(0); }
+  if (me && controls && room.phase === 'hide' && room.roundNumber > spawnedRound) {
+    controls.position.set(me.x, 0, me.z);
+    spawnedRound = room.roundNumber;
+    syncDisguise(player, me, true);
+    controls.update(0);
+  }
   resize();
 }
 
@@ -262,7 +268,7 @@ function applySnapshot(snapshot) {
   const seen = new Set();
   const serverTime = Number(snapshot.serverTime) || Date.now();
   for (const item of snapshot.players) {
-    if (item.id === activeRoom.playerId) { controls?.reconcile(item.x, item.z, serverTime); syncDisguise(player, item, true); continue; }
+    if (item.id === activeRoom.playerId) { syncDisguise(player, item, true); continue; }
     seen.add(item.id);
     const view = ensureRemotePlayer({ ...item, color: activeRoom.players.find((player) => player.id === item.id)?.color });
     syncDisguise(view.group, item);
