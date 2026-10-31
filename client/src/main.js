@@ -27,6 +27,7 @@ import {
 } from '../../shared/constants.js';
 import { WORLD_COLLIDERS } from '../../shared/world.js';
 import { MobileExperience } from './mobileExperience.js';
+import { GameAudio } from './audio.js';
 import './style.css';
 
 const canvas = document.querySelector('#scene');
@@ -82,6 +83,65 @@ let fpsAt = performance.now();
 let toastTimer;
 const clock = new THREE.Clock();
 const remotePlayers = new Map();
+const gameAudio = new GameAudio();
+const audioMuteButton = document.querySelector('#audio-mute');
+let previousAudioPhase = null;
+let previousAudioPosition = null;
+let audioStepDistance = 0;
+let previousLocalCaught = false;
+let lastAudioCountdownSecond = -1;
+
+function updateMuteButton() {
+  audioMuteButton.textContent = gameAudio.muted ? 'Unmute' : 'Mute';
+  audioMuteButton.setAttribute('aria-pressed', String(gameAudio.muted));
+}
+
+updateMuteButton();
+audioMuteButton.addEventListener('click', () => { gameAudio.toggleMuted(); updateMuteButton(); });
+document.addEventListener('touchstart', () => gameAudio.unlock(), { once: true, passive: true });
+document.addEventListener('click', (event) => {
+  if (!event.target.closest?.('button')) return;
+  gameAudio.unlock();
+  gameAudio.buttonTap();
+}, true);
+
+function updateLocalAudio() {
+  const room = activeRoom;
+  const phase = room?.phase || null;
+  if (phase !== previousAudioPhase) {
+    if (phase === 'hide' || phase === 'hunt') gameAudio.phaseStart();
+    previousAudioPhase = phase;
+    lastAudioCountdownSecond = -1;
+    previousAudioPosition = null;
+    audioStepDistance = 0;
+  }
+
+  if (phase === 'hide' || phase === 'hunt') {
+    const seconds = Math.max(0, Math.ceil(((room.deadline || 0) - Date.now()) / 1000));
+    if (seconds > 0 && seconds <= 10 && seconds !== lastAudioCountdownSecond) gameAudio.tick();
+    lastAudioCountdownSecond = seconds > 0 && seconds <= 10 ? seconds : -1;
+  } else lastAudioCountdownSecond = -1;
+
+  const me = room?.players.find((item) => item.id === room.playerId);
+  const caught = Boolean(me?.role === 'hider' && me.caught);
+  if (caught && !previousLocalCaught) gameAudio.catchHit();
+  previousLocalCaught = caught;
+
+  if (controls && me && !caught && (phase === 'hide' || phase === 'hunt') && controls.enabled && controls.keys?.size) {
+    const position = controls.position;
+    if (previousAudioPosition) {
+      audioStepDistance += Math.hypot(position.x - previousAudioPosition.x, position.z - previousAudioPosition.z);
+      while (audioStepDistance >= 1.9) {
+        gameAudio.footstep(me.role === 'hunter' ? 'hunter' : 'hider');
+        audioStepDistance -= 1.9;
+      }
+    }
+    previousAudioPosition = { x: position.x, z: position.z };
+  } else {
+    previousAudioPosition = controls ? { x: controls.position.x, z: controls.position.z } : null;
+    audioStepDistance = 0;
+  }
+}
 
 function showToast(message) {
   toast.textContent = message;
@@ -256,6 +316,7 @@ function strikeForward() {
   const me = activeRoom?.players.find((item) => item.id === activeRoom.playerId);
   if (activeRoom?.phase !== 'hunt' || me?.role !== 'hunter' || me.caught) return false;
   const angle = player.rotation.y;
+  gameAudio.knifeSwish();
   multiplayer?.strike({ x: -Math.sin(angle), z: -Math.cos(angle) });
   return true;
 }
@@ -266,7 +327,7 @@ canvas.addEventListener('pointerdown', (event) => {
   aimPlane.constant = -player.position.y;
   if (!pointerRay.ray.intersectPlane(aimPlane, aimPoint)) return;
   const x = aimPoint.x - player.position.x; const z = aimPoint.z - player.position.z; const length = Math.hypot(x, z);
-  if (length > 0.01) multiplayer?.strike({ x: x / length, z: z / length });
+  if (length > 0.01) { gameAudio.knifeSwish(); multiplayer?.strike({ x: x / length, z: z / length }); }
 });
 
 function applySnapshot(snapshot) {
@@ -420,6 +481,7 @@ function animate(now) {
     playerShadow.position.y = player.position.y + 0.025;
     playerShadow.position.z = player.position.z;
   }
+  updateLocalAudio();
   updateRemotePlayers();
   environment?.update(player.position, now / 1000);
   river.update(now / 1000);

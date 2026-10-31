@@ -65,6 +65,7 @@ kbd { display: inline-block; margin: 0 1px; padding: 1px 4px; border: 1px solid 
 .quality-row > span { padding: 0 5px; }
 .quality-button { border: 1px solid rgba(160, 232, 209, .16); border-radius: 6px; padding: 6px 8px; color: #a9cfc1; background: rgba(111, 173, 150, .08); font: 9px 'DM Mono', monospace; letter-spacing: .06em; }
 .quality-button.active { color: #e5fff1; border-color: rgba(85, 217, 188, .5); background: rgba(66, 211, 193, .17); }
+.audio-mute-button { display: block; min-width: 58px; min-height: 32px; margin-top: 7px; padding: 5px 9px; border: 1px solid rgba(160,232,209,.22); border-radius: 7px; color: #d8fff2; background: rgba(66,211,193,.12); font: 10px 'DM Mono',monospace; }
 .leave-game { top: 22px; left: 50%; transform: translateX(-50%); border-radius: 7px; padding: 8px 13px; color: #e5fff1; cursor: pointer; }
 .round-hud { top: 162px; left: 24px; display: grid; gap: 5px; min-width: 190px; padding: 12px 15px; border-radius: 10px; font: 11px 'DM Mono', monospace; letter-spacing: .08em; }
 .role-reveal { position: absolute; z-index: 5; top: 48%; left: 50%; transform: translate(-50%, -50%); padding: 14px 22px; border: 1px solid var(--line); border-radius: 12px; color: var(--mint); background: rgba(5, 23, 25, .88); font-size: clamp(18px, 4vw, 34px); font-weight: 900; letter-spacing: .08em; text-align: center; }
