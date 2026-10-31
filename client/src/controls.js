@@ -20,7 +20,6 @@ export class PlayerControls {
     this.enabled = false;
     this.onInput = null;
     this.predictionHistory = [];
-    this.renderOffset = new THREE.Vector3();
     this.cameraTiltRadians = THREE.MathUtils.degToRad(CAMERA_TILT_DEGREES);
     this.zoneId = 'A';
     this.boundDown = (event) => {
@@ -50,23 +49,15 @@ export class PlayerControls {
     this.position.y = terrainHeightAt(this.position.x, this.position.z, this.map);
     const depth = waterDepth(this.position.x, this.position.z, this.map);
     this.waterEffects.update(this.position, depth, Boolean(bridgeAt(this.position.x, this.position.z, this.map)), length > 0, delta);
-    // Keep authoritative corrections out of the rendered motion path. The
-    // simulation position can be corrected immediately while the visual offset
-    // decays smoothly over a few frames.
-    const decay = Math.exp(-Math.max(0, delta) / 0.12);
-    this.renderOffset.multiplyScalar(decay);
-    const renderX = this.position.x + this.renderOffset.x;
-    const renderZ = this.position.z + this.renderOffset.z;
-    const renderY = terrainHeightAt(renderX, renderZ, this.map);
-    this.player.position.set(renderX, renderY, renderZ);
+    this.player.position.set(this.position.x, this.position.y, this.position.z);
     const frameScale = Math.max(0.25, window.innerHeight / CAMERA_REFERENCE_HEIGHT);
     const cameraDistance = CAMERA_DISTANCE * frameScale;
     this.camera.position.set(
-      renderX,
-      renderY + Math.cos(this.cameraTiltRadians) * cameraDistance,
-      renderZ + Math.sin(this.cameraTiltRadians) * cameraDistance,
+      this.position.x,
+      this.position.y + Math.cos(this.cameraTiltRadians) * cameraDistance,
+      this.position.z + Math.sin(this.cameraTiltRadians) * cameraDistance,
     );
-    this.camera.lookAt(renderX, renderY, renderZ);
+    this.camera.lookAt(this.position.x, this.position.y, this.position.z);
     const zone = this.map.zones.find((item) => this.position.x >= item.minX && this.position.x <= item.maxX)?.id || 'C';
     if (zone !== this.zoneId) {
       this.zoneId = zone;
@@ -94,16 +85,18 @@ export class PlayerControls {
     const errorX = position.x - this.position.x;
     const errorZ = position.z - this.position.z;
     const error = Math.hypot(errorX, errorZ);
-    if (error < PLAYER_POSITION_CORRECTION_THRESHOLD * 0.15) return;
-    this.renderOffset.x -= errorX;
-    this.renderOffset.z -= errorZ;
-    this.position.x = position.x;
-    this.position.z = position.z;
+    if (error <= PLAYER_POSITION_CORRECTION_THRESHOLD) return;
+    if (error > PLAYER_POSITION_CORRECTION_THRESHOLD * 4) {
+      this.position.x = position.x;
+      this.position.z = position.z;
+      return;
+    }
+    this.position.x += errorX * 0.2;
+    this.position.z += errorZ * 0.2;
   }
 
   resetPredictionHistory() {
     this.predictionHistory.length = 0;
-    this.renderOffset.set(0, 0, 0);
   }
 
   dispose() {
