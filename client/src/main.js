@@ -373,7 +373,7 @@ window.addEventListener('keydown', (event) => {
 
 document.querySelectorAll('[data-quality]').forEach((button) => button.addEventListener('click', () => setQuality(button.dataset.quality)));
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'F3') { event.preventDefault(); debugPanel.hidden = !debugPanel.hidden; }
+  if (import.meta.env.DEV && event.key === 'F3') { event.preventDefault(); debugPanel.hidden = !debugPanel.hidden; }
 });
 multiplayer = new MultiplayerClient({
   onRoom: applyRoomState,

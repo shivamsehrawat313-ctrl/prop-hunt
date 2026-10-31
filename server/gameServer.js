@@ -21,7 +21,7 @@ import {
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const PLAYER_COLORS = ['#7fffe1', '#f6ce72', '#a9a2ff', '#ff9e88', '#8bdbff', '#f6a9d9'];
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const builtClientRoot = resolve(projectRoot, 'dist', 'client');
+const builtClientRoot = resolve(projectRoot, 'build', 'client');
 const mimeTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.glb': 'model/gltf-binary', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const freeProps = (players) => PROP_TYPES.filter((prop) => !players.some((player) => player.disguiseType === prop.id));
 const cleanName = (raw) => { const name = String(raw || '').trim().replace(/[\u0000-\u001f]/g, ''); return name.length >= 2 && name.length <= 14 ? name : null; };
@@ -37,13 +37,20 @@ export function createGameServer({ port = 0, host = '127.0.0.1', staticRoot = bu
   const httpServer = createServer(async (request, response) => {
     const pathname = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`).pathname;
     if (pathname === '/health') { response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({ ok: true, game: 'shadow-hunt', tickRate: GAME_TICK_RATE_HZ })); return; }
+    if (pathname === '/maps/forest.json') {
+      try { response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-cache' }); response.end(await readFile(resolve(projectRoot, 'maps', 'forest.json'))); }
+      catch { response.writeHead(404); response.end('Map not found'); }
+      return;
+    }
     let decoded; try { decoded = decodeURIComponent(pathname); } catch { response.writeHead(400); response.end('Bad path'); return; }
     const target = resolve(staticRoot, `.${decoded}`);
     if (target !== staticRoot && !target.startsWith(`${staticRoot}${sep}`)) { response.writeHead(403); response.end('Forbidden'); return; }
     try { const file = await stat(target); if (!file.isFile()) throw new Error('Not a file'); response.writeHead(200, { 'content-type': mimeTypes[extname(target).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-cache' }); response.end(await readFile(target)); }
     catch { const accept = request.headers.accept || ''; if (pathname !== '/' && !accept.includes('text/html')) { response.writeHead(404); response.end('Not found'); return; } try { response.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' }); response.end(await readFile(resolve(staticRoot, 'index.html'))); } catch { response.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' }); response.end('Built client not found. Run npm run build first.'); } }
   });
-  const io = new Server(httpServer, { cors: { origin: '*' }, maxHttpBufferSize: 16_384 });
+  // In production the app and realtime API share an origin. Keep both
+  // transports enabled for websocket-first connections with polling fallback.
+  const io = new Server(httpServer, { transports: ['websocket', 'polling'], maxHttpBufferSize: 16_384 });
   const roomForSocket = (socket) => { const code = socketRooms.get(socket.id); return code ? rooms.get(code) : null; };
   const roomCode = (roomsMap) => { for (let i = 0; i < 1000; i += 1) { let code = ''; for (let j = 0; j < ROOM_CODE_LENGTH; j += 1) code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]; if (!roomsMap.has(code)) return code; } throw new Error('Room code allocation failed'); };
 
