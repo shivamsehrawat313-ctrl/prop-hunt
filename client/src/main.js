@@ -266,7 +266,9 @@ canvas.addEventListener('pointerdown', (event) => {
 function applySnapshot(snapshot) {
   if (!snapshot || !['hide', 'hunt', 'results'].includes(snapshot.phase) || !activeRoom) return;
   const seen = new Set();
-  const serverTime = Number(snapshot.serverTime) || Date.now();
+  // Use this browser's monotonic clock for interpolation. Render's wall clock
+  // and a player's browser clock are not guaranteed to be synchronized.
+  const receivedAt = performance.now();
   for (const item of snapshot.players) {
     if (item.id === activeRoom.playerId) { syncDisguise(player, item, true); continue; }
     seen.add(item.id);
@@ -275,8 +277,8 @@ function applySnapshot(snapshot) {
     if (item.caught && view.group.userData.disguiseVisual) { view.group.remove(view.group.userData.disguiseVisual); view.group.userData.disguiseVisual = null; }
     view.group.visible = !item.caught;
     view.name = item.name;
-    view.buffer.push({ time: serverTime, x: item.x, z: item.z, angle: item.angle });
-    const cutoff = serverTime - SNAPSHOT_BUFFER_MAX_MS;
+    view.buffer.push({ time: receivedAt, x: item.x, z: item.z, angle: item.angle });
+    const cutoff = receivedAt - SNAPSHOT_BUFFER_MAX_MS;
     while (view.buffer.length > 2 && view.buffer[1].time < cutoff) view.buffer.shift();
   }
   for (const [id, view] of remotePlayers) if (!seen.has(id)) { scene.remove(view.group); remotePlayers.delete(id); }
@@ -287,7 +289,7 @@ function updateRemotePlayers() {
     SNAPSHOT_INTERPOLATION_MAX_DELAY_MS,
     multiplayer?.snapshotInterpolationDelayMs || SNAPSHOT_INTERPOLATION_DELAY_MS,
   );
-  const renderAt = Date.now() - interpolationDelay;
+  const renderAt = performance.now() - interpolationDelay;
   const minimapPlayers = [];
   for (const view of remotePlayers.values()) {
     const samples = view.buffer;
