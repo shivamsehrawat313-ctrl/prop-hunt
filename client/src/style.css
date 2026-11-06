@@ -35,6 +35,7 @@ button { cursor: pointer; }
 .join-row button { flex: 0 0 82px; }
 #lobby-error { min-height: 18px; margin: 0; color: #ffb9a8; font-size: 12px; }
 .lobby-card { gap: 16px; }
+.room-waiting-note { margin: -5px 0 0; color: #a8cbc0; font-size: 11px; line-height: 1.4; text-align: center; }
 .room-code { text-align: center; color: #b5f7de; font-size: 34px; font-weight: 800; letter-spacing: .22em; }
 .copy-row button { flex: 1; }
 .player-list { list-style: none; display: grid; gap: 8px; max-height: 45vh; overflow-y: auto; margin: 0; padding: 0; }
@@ -43,6 +44,10 @@ button { cursor: pointer; }
 .player-tags { display: flex; gap: 8px; align-items: center; color: #9acfc0; font: 10px 'DM Mono', monospace; }
 .player-tags .host-tag { color: #8ff0d6; }
 .lobby-actions button { flex: 1; }
+.room-overlay.screen { z-index: 10; display: flex; align-items: center; justify-content: flex-end; padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)); overflow: auto; pointer-events: none; background: transparent; }
+.room-overlay .lobby-card { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); gap: 10px; padding: 17px; pointer-events: auto; }
+.room-overlay .room-code { font-size: clamp(28px, 6vw, 36px); }
+.room-overlay .player-list { max-height: min(25dvh, 180px); }
 .quiet-button { min-height: 38px !important; background: transparent !important; border-color: transparent !important; color: #a8cfc3 !important; font-size: 12px !important; }
 #game-shell { position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #102c2a; }
 #scene { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
@@ -113,6 +118,13 @@ kbd { display: inline-block; margin: 0 1px; padding: 1px 4px; border: 1px solid 
   .prop-choice img { height: 40px; }
   .results-card { max-height: 90vh; overflow-y: auto; }
   .toast { bottom: 75px; width: max-content; max-width: 90vw; }
+}
+
+@media (max-width: 620px) and (orientation: portrait) {
+  .room-overlay.screen { align-items: flex-start; justify-content: center; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
+  .room-overlay .lobby-card { width: min(100%, 420px); max-height: min(52dvh, 440px); padding: 13px; gap: 8px; }
+  .room-overlay .player-list { max-height: 16dvh; }
+  .room-overlay .quiet-button { min-height: 32px !important; }
 }
 
 #mobile-controls { display: none; }

@@ -75,7 +75,7 @@ export class MobileExperience {
     const controls = document.querySelector('#mobile-controls');
     const attack = document.querySelector('#mobile-attack');
     const lock = document.querySelector('#lock-disguise');
-    if (controls) controls.hidden = !active;
+    if (controls) controls.hidden = !(active || (this.phase === 'lobby' && room));
     if (attack) attack.hidden = !(this.phase === 'hunt' && me?.role === 'hunter' && !me.caught);
     if (lock) lock.hidden = !(this.phase === 'hide' && me?.role === 'hider' && !me.caught);
     this.refreshOrientation();

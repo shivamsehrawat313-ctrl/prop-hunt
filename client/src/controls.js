@@ -32,6 +32,8 @@ export class PlayerControls {
     this.cameraTiltRadians = THREE.MathUtils.degToRad(CAMERA_TILT_DEGREES);
     this.zoneId = 'A';
     this.boundDown = (event) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
       const key = event.key.toLowerCase();
       if (KEYS.has(key)) { event.preventDefault(); this.keys.add(key); }
     };

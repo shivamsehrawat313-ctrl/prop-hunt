@@ -239,7 +239,10 @@ function applyRoomState(room) {
   if (room?.phase === 'lobby') { shownRound = 0; spawnedRound = 0; }
   const me = room?.players.find((item) => item.id === room.playerId);
   player.visible = !me?.caught;
-  const canMove = sceneReady && ['hide', 'hunt'].includes(room?.phase) && !me?.caught && !(room?.phase === 'hide' && me?.role === 'hunter');
+  // Lobby movement is local sandbox exploration; sendInput remains inactive
+  // until the server starts the real round.
+  const canMove = sceneReady && (room?.phase === 'lobby' || ['hide', 'hunt'].includes(room?.phase))
+    && !me?.caught && !(room?.phase === 'hide' && me?.role === 'hunter');
   if (controls) {
     controls.enabled = Boolean(canMove);
     controls.speed = me?.role === 'hunter'
@@ -255,6 +258,9 @@ function applyRoomState(room) {
     for (const view of remotePlayers.values()) scene.remove(view.group);
     remotePlayers.clear();
   }
+  // The canvas may have been initialized while #game-shell was hidden on the
+  // landing page. Resize after it becomes visible, including lobby exploration.
+  if (sceneReady) resize();
   if (!room || room.phase === 'lobby' || !sceneReady) return;
   if (me && controls && room.phase === 'hide' && room.roundNumber > spawnedRound) {
     controls.position.set(me.x, 0, me.z);
@@ -263,7 +269,6 @@ function applyRoomState(room) {
     syncDisguise(player, me, true);
     controls.update(0);
   }
-  resize();
 }
 
 function syncDisguise(group, state, local = false) {

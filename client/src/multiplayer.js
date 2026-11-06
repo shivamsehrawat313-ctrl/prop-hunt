@@ -27,7 +27,7 @@ export class MultiplayerClient {
     document.querySelector('#leave-room').addEventListener('click', () => this.leaveRoom());
     document.querySelector('#leave-game').addEventListener('click', () => this.leaveRoom());
     document.querySelector('#copy-code').addEventListener('click', () => this.copy(this.room?.code || ''));
-    document.querySelector('#copy-link').addEventListener('click', () => this.copy(`${location.origin}/?room=${this.room?.code || ''}`));
+    document.querySelector('#copy-link').addEventListener('click', () => this.invitePlayer());
     document.querySelector('#lock-disguise').addEventListener('click', () => this.lockDisguise());
     document.querySelector('#prop-grid').addEventListener('click', (event) => { const button = event.target.closest('[data-prop]'); if (button && !button.disabled) this.chooseDisguise(button.dataset.prop); });
     document.querySelector('#restart-round').addEventListener('click', () => this.socket.emit('round:restart'));
@@ -91,6 +91,17 @@ export class MultiplayerClient {
   reportNetwork() { this.onNetwork({ pingMs: this.pingMs, snapshotHz: this.snapshotHz }); }
   clearError() { this.error.textContent = ''; }
   async copy(text) { try { await navigator.clipboard.writeText(text); this.error.textContent = 'Copied'; } catch { this.error.textContent = 'Copy unavailable'; } }
+  async invitePlayer() {
+    const url = `${location.origin}/?room=${this.room?.code || ''}`;
+    if (!this.room?.code) return;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Join my Jungle Hunt game', url });
+      else await this.copy(url);
+    } catch {
+      // A cancelled native share sheet is harmless; clipboard is the fallback.
+      await this.copy(url);
+    }
+  }
   leaveRoom() { if (this.room) this.socket.emit('room:leave'); else { this.landing.hidden = false; this.lobby.hidden = true; this.game.hidden = true; } }
   renderRoundHud() {
     const room = this.room; const hud = document.querySelector('#round-hud'); const picker = document.querySelector('#hider-picker'); const blocker = document.querySelector('#hunter-blocker'); const results = document.querySelector('#round-results');
@@ -133,13 +144,17 @@ export class MultiplayerClient {
   render() {
     const room = this.room;
     if (!room) { this.landing.hidden = false; this.lobby.hidden = true; this.game.hidden = true; document.querySelector('#round-results').hidden = true; return; }
-    this.landing.hidden = true; const inGame = room.phase !== 'lobby'; this.lobby.hidden = inGame; this.game.hidden = !inGame || !this.worldReady;
+    this.landing.hidden = true; const inGame = room.phase !== 'lobby';
+    this.lobby.hidden = inGame;
+    this.lobby.classList.toggle('room-overlay', !inGame);
+    // Keep the loaded map visible under the room panel while players gather.
+    this.game.hidden = !this.worldReady;
     document.querySelector('#room-code').textContent = room.code;
     const list = document.querySelector('#player-list'); list.replaceChildren();
     for (const player of room.players) { const row = document.createElement('li'); const name = document.createElement('span'); name.className = 'player-name'; name.textContent = player.name; name.style.color = player.color; const tags = document.createElement('span'); tags.className = 'player-tags'; if (player.host) { const tag = document.createElement('span'); tag.className = 'host-tag'; tag.textContent = 'HOST'; tags.append(tag); } const state = document.createElement('span'); state.textContent = player.ready ? 'READY' : 'NOT READY'; tags.append(state); row.append(name, tags); list.append(row); }
     const me = room.players.find((p) => p.id === room.playerId); const host = me?.host; const canStart = host && room.players.length >= 2 && room.players.filter((p) => !p.host).every((p) => p.ready) && this.worldReady;
     document.querySelector('#ready-button').hidden = inGame; document.querySelector('#ready-button').textContent = me?.ready ? 'Not ready' : 'Ready';
-    document.querySelector('#start-button').hidden = !host || inGame; document.querySelector('#start-button').disabled = !canStart; document.querySelector('#start-button').textContent = this.worldReady ? 'Start' : this.worldError ? 'World load failed' : 'Loading world...';
+    document.querySelector('#start-button').hidden = !host || inGame; document.querySelector('#start-button').disabled = !canStart; document.querySelector('#start-button').textContent = this.worldReady ? 'Start Game' : this.worldError ? 'World load failed' : 'Loading world...';
     if (this.worldError) this.error.textContent = this.worldError;
     this.renderRoundHud();
   }
